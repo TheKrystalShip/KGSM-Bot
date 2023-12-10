@@ -10,8 +10,8 @@ namespace TheKrystalShip.Admiral.Tools
     public static class AppSettings
     {
         private static IConfigurationRoot _config;
-        public const string SETTINGS_FILENAME = "appsettings.json";
-        public const string DEFAULT_SETTINGS_FILENAME = "appsettings.example.json";
+        public const string FILENAME = "appsettings.json";
+        public const string DEFAULT_FILENAME = "appsettings.example.json";
 
         static AppSettings()
         {
@@ -21,7 +21,7 @@ namespace TheKrystalShip.Admiral.Tools
         public static IConfigurationRoot ForceReload()
         {
             _config = new ConfigurationBuilder()
-                .AddJsonFile(SETTINGS_FILENAME, optional: false, reloadOnChange: true)
+                .AddJsonFile(FILENAME, optional: false, reloadOnChange: true)
                 .Build();
 
             return _config;
@@ -29,6 +29,11 @@ namespace TheKrystalShip.Admiral.Tools
 
         public static string? Get(string path)
         {
+            if (path.StartsWith("settings:"))
+            {
+                return _config[path];
+            }
+
             return _config.GetSection("settings")[path];
         }
 

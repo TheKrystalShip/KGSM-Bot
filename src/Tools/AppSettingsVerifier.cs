@@ -12,22 +12,18 @@ namespace TheKrystalShip.Admiral.Tools
             CreateDefaultIfNone();
         }
 
-        public AppSettingsVerifier()
-        {
-
-        }
-
         /// <summary>
         /// Verifies that the appsettings.json file contains all the required fields
         /// </summary>
         /// <returns></returns>
         public static void Verify()
         {
-            AppSettingsVerifier selfInstance = new AppSettingsVerifier();
-            IConfigurationRoot config = AppSettings.GetAll();
-            List<string> errors = [];
+            AppSettingsVerifier selfInstance = new();
 
-            errors.AddRange(selfInstance.CheckSectionForEmpty(config.GetSection("settings")));
+            IConfigurationRoot config = AppSettings.GetAll();
+
+            // Get a list of all empty fields
+            List<string> errors = selfInstance.CheckSectionForEmpty(config.GetSection("settings"));
 
             if (errors.Count > 0)
             {
@@ -67,7 +63,7 @@ namespace TheKrystalShip.Admiral.Tools
         /// <exception cref="FileNotFoundException">Thrown if default settings file is not found</exception>
         private static void CreateDefaultIfNone()
         {
-            bool settingsFileExists = File.Exists(AppSettings.SETTINGS_FILENAME);
+            bool settingsFileExists = File.Exists(AppSettings.FILENAME);
 
             // If there's an existing settings file do nothing
             if (settingsFileExists)
@@ -75,7 +71,7 @@ namespace TheKrystalShip.Admiral.Tools
                 return;
             }
 
-            bool defaultSettingsFileExists = File.Exists(AppSettings.DEFAULT_SETTINGS_FILENAME);
+            bool defaultSettingsFileExists = File.Exists(AppSettings.DEFAULT_FILENAME);
 
             // If there isn't a default, but there's a settings file also do nothing
             if (!defaultSettingsFileExists && settingsFileExists)
@@ -86,13 +82,13 @@ namespace TheKrystalShip.Admiral.Tools
             // If neither file is present throw exception
             if (!defaultSettingsFileExists && !settingsFileExists)
             {
-                throw new FileNotFoundException($"Default {AppSettings.DEFAULT_SETTINGS_FILENAME} file doesn't exists");
+                throw new FileNotFoundException($"Default {AppSettings.DEFAULT_FILENAME} file doesn't exists");
             }
 
             // Create a settings file using the default as a template
-            Console.WriteLine($"No {AppSettings.SETTINGS_FILENAME} file was found, creating new using default");
+            Console.WriteLine($"No {AppSettings.FILENAME} file was found, creating new using default");
 
-            File.Copy(AppSettings.DEFAULT_SETTINGS_FILENAME, AppSettings.SETTINGS_FILENAME, overwrite: false);
+            File.Copy(AppSettings.DEFAULT_FILENAME, AppSettings.FILENAME, overwrite: false);
         }
     }
 }
