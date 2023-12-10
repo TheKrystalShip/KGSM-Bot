@@ -16,17 +16,19 @@ namespace TheKrystalShip.Admiral.Services
         public SshCommandExecutioner()
         {
             string? sshHost = AppSettings.Get("ssh:host");
+            string? sshPort = AppSettings.Get("ssh:port");
             string? sshUsername = AppSettings.Get("ssh:username");
             string? sshPassword = AppSettings.Get("ssh:password");
 
-            if (sshHost is null || sshUsername is null || sshPassword is null)
+            if (sshHost is null || sshPort is null || sshUsername is null || sshPassword is null)
             {
                 throw new ArgumentNullException("One or more connection details were null");
             }
 
             try
             {
-                _sshClient = new SshClient(sshHost, sshUsername, sshPassword);
+                int port = int.Parse(sshPort);
+                _sshClient = new SshClient(sshHost, port, sshUsername, sshPassword);
                 _sshClient.Connect();
                 Console.WriteLine("SSH Connection established to {0}", sshHost);
             }
