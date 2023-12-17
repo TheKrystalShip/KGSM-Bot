@@ -11,6 +11,12 @@ namespace TheKrystalShip.Admiral.Domain
             Output = "";
         }
 
+        public CommandExecutionResult(string output)
+        {
+            Status = ExecutionsStatus.Success;
+            Output = output;
+        }
+
         public CommandExecutionResult(ExecutionsStatus status, string output)
         {
             Status = status;

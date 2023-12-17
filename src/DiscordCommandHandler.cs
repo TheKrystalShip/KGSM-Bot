@@ -41,30 +41,102 @@ namespace TheKrystalShip.Admiral
 
         private async Task HandleGameStartCommandAsync(SocketSlashCommand command, string game)
         {
-            CommandExecutionResult result = _commandExecutioner.Execute(Commands.Start(game));
+            var result = _commandExecutioner.Start(game);
 
-            await command.RespondAsync(result.Output);
+            if (result.Status == ExecutionsStatus.Error)
+            {
+                await command.RespondAsync($"There might have been an error: {result.Output}");
+                return;
+            }
+
+            await command.RespondAsync("Success");
+            await UpdateDiscordChannelAsync(game, GameServerStatus.Online);
         }
 
         private async Task HandleGameStopCommandAsync(SocketSlashCommand command, string game)
         {
-            CommandExecutionResult result = _commandExecutioner.Execute(Commands.Stop(game));
+            var result = _commandExecutioner.Stop(game);
 
-            await command.RespondAsync(result.Output);
+            if (result.Status == ExecutionsStatus.Error)
+            {
+                await command.RespondAsync($"There might have been an error: {result.Output}");
+                return;
+            }
+
+            await command.RespondAsync("Success");
+            await UpdateDiscordChannelAsync(game, GameServerStatus.Offline);
         }
 
         private async Task HandleGameRestartCommandAsync(SocketSlashCommand command, string game)
         {
-            CommandExecutionResult result = _commandExecutioner.Execute(Commands.Stop(game));
+            var result = _commandExecutioner.Restart(game);
 
-            await command.RespondAsync(result.Output);
+            if (result.Status == ExecutionsStatus.Error)
+            {
+                await command.RespondAsync($"There might have been an error: {result.Output}");
+                return;
+            }
+
+            await command.RespondAsync("Success");
+            await UpdateDiscordChannelAsync(game, GameServerStatus.Restarting);
         }
 
         private async Task HandleGameStatusCommandAsync(SocketSlashCommand command, string game)
         {
-            CommandExecutionResult result = _commandExecutioner.Execute(Commands.Status(game));
+            var result = _commandExecutioner.Status(game);
 
-            await command.RespondAsync(result.Output);
+            if (result.Status == ExecutionsStatus.Error)
+            {
+                await command.RespondAsync($"There might have been an error: {result.Output}");
+                return;
+            }
+
+            if (result.Output != string.Empty)
+            {
+                await command.RespondAsync(result.Output);
+                return;
+            }
+        }
+
+        /// <summary>
+        /// Updates the game's discord channel to reflect the new service status
+        /// </summary>
+        /// <param name="game">Game channel name</param>
+        /// <param name="newStatus">New service status</param>
+        /// <returns></returns>
+        private async Task UpdateDiscordChannelAsync(string game, GameServerStatus newStatus)
+        {
+            string? discordChannelId = AppSettings.Get($"discord:channelIds:{game}");
+
+            if (discordChannelId is null)
+            {
+                Console.WriteLine($"Failed to fetch discord channelId from settings file for game: {game}");
+                return;
+            }
+
+            string? emote = AppSettings.Get($"discord:status:{newStatus}");
+
+            if (emote is null)
+            {
+                Console.WriteLine($"Failed to fetch new status emote from settings file. New status: {newStatus}");
+                return;
+            }
+
+            if (_client.GetChannel(ulong.Parse(discordChannelId)) is not SocketGuildChannel discordChannel)
+            {
+                Console.WriteLine($"Failed to get discord channel with ID: {discordChannelId}");
+                return;
+            }
+
+            string newChannelStatusName = $"{emote}{game}";
+            Console.WriteLine($"Updating {game} channel name to: {newChannelStatusName}");
+
+            // Change channel name to reflect new GameServerStatus
+            // !This will block the gateway!
+            await discordChannel.ModifyAsync((channel) =>
+            {
+                channel.Name = newChannelStatusName;
+            });
         }
 
         // Doesn't need to run every time the bot starts up, just once is enough
