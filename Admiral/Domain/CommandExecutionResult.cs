@@ -8,7 +8,7 @@ namespace TheKrystalShip.Admiral.Domain
         public CommandExecutionResult()
         {
             Status = ExecutionsStatus.Success;
-            Output = "";
+            Output = string.Empty;
         }
 
         public CommandExecutionResult(string output)

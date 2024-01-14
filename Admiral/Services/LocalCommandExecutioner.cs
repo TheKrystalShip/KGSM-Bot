@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using TheKrystalShip.Admiral.Domain;
 using TheKrystalShip.Admiral.Tools;
+using TheKrystalShip.Logging;
 
 namespace TheKrystalShip.Admiral.Services
 {
@@ -9,9 +10,11 @@ namespace TheKrystalShip.Admiral.Services
     /// </summary>
     public class LocalCommandExecutioner : ICommandExecutioner
     {
+        private readonly Logger<LocalCommandExecutioner> _logger;
+
         public LocalCommandExecutioner()
         {
-
+            _logger = new();
         }
 
         public CommandExecutionResult Execute(string command, string[] args)
@@ -20,7 +23,7 @@ namespace TheKrystalShip.Admiral.Services
             {
                 FileName = command,
                 Arguments = string.Join(" ", args),
-                UseShellExecute = true,
+                UseShellExecute = false,
                 RedirectStandardOutput = true,
                 CreateNoWindow = true
             };
@@ -29,13 +32,14 @@ namespace TheKrystalShip.Admiral.Services
 
             if (process is null)
             {
-                Console.WriteLine("Process failed to start");
+                _logger.LogError("Process failed to start");
                 return new CommandExecutionResult(ExecutionsStatus.Error, "Process failed to start");
             }
 
+            process.WaitForExit();
+
             int exitCode = process.ExitCode;
             string output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit();
 
             if (exitCode is 0)
             {

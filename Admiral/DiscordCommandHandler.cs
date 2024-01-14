@@ -3,16 +3,19 @@ using Discord.WebSocket;
 using TheKrystalShip.Admiral.Domain;
 using TheKrystalShip.Admiral.Services;
 using TheKrystalShip.Admiral.Tools;
+using TheKrystalShip.Logging;
 
 namespace TheKrystalShip.Admiral
 {
     public class DiscordCommandHandler
     {
+        private readonly Logger<DiscordCommandHandler> _logger;
         private readonly DiscordSocketClient _client;
         private readonly CommandExecutioner _commandExecutioner;
 
         public DiscordCommandHandler(DiscordSocketClient client, CommandExecutioner commandExecutioner)
         {
+            _logger = new();
             _client = client;
             _commandExecutioner = commandExecutioner;
         }
@@ -41,7 +44,7 @@ namespace TheKrystalShip.Admiral
 
         private async Task HandleGameStartCommandAsync(SocketSlashCommand command, string game)
         {
-            var result = _commandExecutioner.Start(game);
+            CommandExecutionResult result = _commandExecutioner.Start(game);
 
             if (result.Status == ExecutionsStatus.Error)
             {
@@ -49,13 +52,13 @@ namespace TheKrystalShip.Admiral
                 return;
             }
 
-            await command.RespondAsync("Success");
+            await command.RespondAsync($"Starting {game}...");
             await UpdateDiscordChannelAsync(game, GameServerStatus.Online);
         }
 
         private async Task HandleGameStopCommandAsync(SocketSlashCommand command, string game)
         {
-            var result = _commandExecutioner.Stop(game);
+            CommandExecutionResult result = _commandExecutioner.Stop(game);
 
             if (result.Status == ExecutionsStatus.Error)
             {
@@ -63,13 +66,13 @@ namespace TheKrystalShip.Admiral
                 return;
             }
 
-            await command.RespondAsync("Success");
+            await command.RespondAsync($"Stopping {game}...");
             await UpdateDiscordChannelAsync(game, GameServerStatus.Offline);
         }
 
         private async Task HandleGameRestartCommandAsync(SocketSlashCommand command, string game)
         {
-            var result = _commandExecutioner.Restart(game);
+            CommandExecutionResult result = _commandExecutioner.Restart(game);
 
             if (result.Status == ExecutionsStatus.Error)
             {
@@ -77,13 +80,12 @@ namespace TheKrystalShip.Admiral
                 return;
             }
 
-            await command.RespondAsync("Success");
-            await UpdateDiscordChannelAsync(game, GameServerStatus.Restarting);
+            await command.RespondAsync($"Restarting {game}...");
         }
 
         private async Task HandleGameStatusCommandAsync(SocketSlashCommand command, string game)
         {
-            var result = _commandExecutioner.Status(game);
+            CommandExecutionResult result = _commandExecutioner.Status(game);
 
             if (result.Status == ExecutionsStatus.Error)
             {
@@ -110,7 +112,7 @@ namespace TheKrystalShip.Admiral
 
             if (discordChannelId is null)
             {
-                Console.WriteLine($"Failed to fetch discord channelId from settings file for game: {game}");
+                _logger.LogError($"Failed to fetch discord channelId from settings file for game: {game}");
                 return;
             }
 
@@ -118,18 +120,18 @@ namespace TheKrystalShip.Admiral
 
             if (emote is null)
             {
-                Console.WriteLine($"Failed to fetch new status emote from settings file. New status: {newStatus}");
+                _logger.LogError($"Failed to fetch new status emote from settings file. New status: {newStatus}");
                 return;
             }
 
             if (_client.GetChannel(ulong.Parse(discordChannelId)) is not SocketGuildChannel discordChannel)
             {
-                Console.WriteLine($"Failed to get discord channel with ID: {discordChannelId}");
+                _logger.LogError($"Failed to get discord channel with ID: {discordChannelId}");
                 return;
             }
 
             string newChannelStatusName = $"{emote}{game}";
-            Console.WriteLine($"Updating {game} channel name to: {newChannelStatusName}");
+            _logger.LogInformation($"Updating {game} channel name to: {newChannelStatusName}");
 
             // Change channel name to reflect new GameServerStatus
             // !This will block the gateway!
@@ -186,7 +188,7 @@ namespace TheKrystalShip.Admiral
             }
             catch (Exception exception)
             {
-                Console.WriteLine(exception.Message);
+                _logger.LogError(exception.Message);
             }
         }
     }

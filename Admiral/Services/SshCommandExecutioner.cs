@@ -1,6 +1,7 @@
 using TheKrystalShip.Admiral.Tools;
 using Renci.SshNet;
 using TheKrystalShip.Admiral.Domain;
+using TheKrystalShip.Logging;
 
 namespace TheKrystalShip.Admiral.Services
 {
@@ -10,11 +11,14 @@ namespace TheKrystalShip.Admiral.Services
     /// </summary>
     public class SshCommandExecutioner : ICommandExecutioner
     {
+        private readonly Logger<SshCommandExecutioner> _logger;
         private readonly SshClient _sshClient;
         private readonly string _sudoStringPrepend = $"echo -e '{AppSettings.Get("ssh:password")}' | sudo -S ";
 
         public SshCommandExecutioner()
         {
+            _logger = new();
+
             string? sshHost = AppSettings.Get("ssh:host");
             string? sshPort = AppSettings.Get("ssh:port");
             string? sshUsername = AppSettings.Get("ssh:username");
@@ -25,17 +29,17 @@ namespace TheKrystalShip.Admiral.Services
                 throw new ArgumentNullException("One or more connection details were null");
             }
 
+            int port = int.Parse(sshPort);
+            _sshClient = new SshClient(sshHost, port, sshUsername, sshPassword);
+
             try
             {
-                int port = int.Parse(sshPort);
-                _sshClient = new SshClient(sshHost, port, sshUsername, sshPassword);
                 _sshClient.Connect();
-                Console.WriteLine("SSH Connection established to {0}", sshHost);
+                _logger.LogInformation("SSH Connection established to {0}", sshHost);
             }
-            catch (ArgumentException argEx)
+            catch (Exception e)
             {
-                Console.WriteLine(argEx.Message);
-                throw;
+                _logger.LogError(e.Message);
             }
         }
 
