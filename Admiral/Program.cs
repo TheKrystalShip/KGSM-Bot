@@ -32,7 +32,7 @@ namespace TheKrystalShip.Admiral
                 })
                 .AddSingleton(new CommandExecutioner())
                 .AddSingleton<DiscordSocketClient>()
-                .AddSingleton<DiscordCommandHandler>();
+                .AddSingleton<SlashCommandHandler>();
 
             return collection.BuildServiceProvider();
         }
@@ -40,7 +40,7 @@ namespace TheKrystalShip.Admiral
         public async Task RunAsync()
         {
             DiscordSocketClient client = _services.GetRequiredService<DiscordSocketClient>();
-            DiscordCommandHandler commandHandler = _services.GetRequiredService<DiscordCommandHandler>();
+            SlashCommandHandler commandHandler = _services.GetRequiredService<SlashCommandHandler>();
 
             client.SlashCommandExecuted += commandHandler.HandleCommand;
             client.Log += OnClientLog;
@@ -62,6 +62,9 @@ namespace TheKrystalShip.Admiral
         private async Task OnClientReady(DiscordSocketClient client)
         {
             await client.SetGameAsync("over servers 👀", null, ActivityType.Watching);
+
+            // Leave commented unless you know what you're doing
+            // await _services.GetRequiredService<SlashCommandHandler>().RegisterSlashCommands();
         }
     }
 }

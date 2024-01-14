@@ -7,13 +7,13 @@ using TheKrystalShip.Logging;
 
 namespace TheKrystalShip.Admiral
 {
-    public class DiscordCommandHandler
+    public class SlashCommandHandler
     {
-        private readonly Logger<DiscordCommandHandler> _logger;
+        private readonly Logger<SlashCommandHandler> _logger;
         private readonly DiscordSocketClient _client;
         private readonly CommandExecutioner _commandExecutioner;
 
-        public DiscordCommandHandler(DiscordSocketClient client, CommandExecutioner commandExecutioner)
+        public SlashCommandHandler(DiscordSocketClient client, CommandExecutioner commandExecutioner)
         {
             _logger = new();
             _client = client;
@@ -23,21 +23,22 @@ namespace TheKrystalShip.Admiral
         public async Task HandleCommand(SocketSlashCommand command)
         {
             // All commands require the user to specify a game.
-            string game = (string)command.Data.Options.First().Value;
+            string game = (string) (command.Data.Options?.First()?.Value ?? "");
+            string commandFormatted = (command.Data.Name ?? "") + " " + game;
+
+            _logger.LogInformation($"Executing /{commandFormatted}");
 
             switch (command.Data.Name)
             {
-                case "start":
-                    await HandleGameStartCommandAsync(command, game);
+                case "start":   await HandleGameStartCommandAsync(command, game);
                     break;
-                case "stop":
-                    await HandleGameStopCommandAsync(command, game);
+                case "stop":    await HandleGameStopCommandAsync(command, game);
                     break;
-                case "restart":
-                    await HandleGameRestartCommandAsync(command, game);
+                case "restart": await HandleGameRestartCommandAsync(command, game);
                     break;
-                case "status":
-                    await HandleGameStatusCommandAsync(command, game);
+                case "status":  await HandleGameStatusCommandAsync(command, game);
+                    break;
+                default:        await command.RespondAsync("Could not find command");
                     break;
             }
         }
@@ -188,7 +189,7 @@ namespace TheKrystalShip.Admiral
             }
             catch (Exception exception)
             {
-                _logger.LogError(exception.Message);
+                _logger.LogError(exception);
             }
         }
     }
