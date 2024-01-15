@@ -9,11 +9,13 @@ namespace TheKrystalShip.Admiral
 {
     public class Program
     {
+        const string REGISTER_COMMANDS_ARG = "--register-commands";
+
         private readonly IServiceProvider _services;
         private readonly Logger<Program> _logger;
 
         public static void Main(string[] args)
-            => new Program().RunAsync().GetAwaiter().GetResult();
+            => new Program().RunAsync(args).GetAwaiter().GetResult();
 
         public Program()
         {
@@ -38,7 +40,7 @@ namespace TheKrystalShip.Admiral
             return collection.BuildServiceProvider();
         }
 
-        public async Task RunAsync()
+        public async Task RunAsync(string[] args)
         {
             DiscordSocketClient client = _services.GetRequiredService<DiscordSocketClient>();
             SlashCommandHandler commandHandler = _services.GetRequiredService<SlashCommandHandler>();
@@ -46,6 +48,12 @@ namespace TheKrystalShip.Admiral
             client.SlashCommandExecuted += commandHandler.HandleCommand;
             client.Log += OnClientLog;
             client.Ready += () => OnClientReadyAsync(client);
+
+            // Register slash commands if program was launched with arg.
+            if (args.Length > 0 && args[0] == REGISTER_COMMANDS_ARG)
+            {
+                client.Ready += commandHandler.RegisterSlashCommands;
+            }
 
             await client.LoginAsync(TokenType.Bot, AppSettings.Get("discord:token"));
             await client.StartAsync();
