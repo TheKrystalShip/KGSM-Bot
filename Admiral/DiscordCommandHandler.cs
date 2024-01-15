@@ -45,6 +45,9 @@ namespace TheKrystalShip.Admiral
 
         private async Task HandleGameStartCommandAsync(SocketSlashCommand command, string game)
         {
+            // Respond quickly then handle the task in the background.
+            Task respondTask = command.RespondAsync($"Starting {game}...");
+
             CommandExecutionResult result = _commandExecutioner.Start(game);
 
             if (result.Status == ExecutionsStatus.Error)
@@ -53,12 +56,14 @@ namespace TheKrystalShip.Admiral
                 return;
             }
 
-            await command.RespondAsync($"Starting {game}...");
+            await respondTask;
             await UpdateDiscordChannelAsync(game, GameServerStatus.Online);
         }
 
         private async Task HandleGameStopCommandAsync(SocketSlashCommand command, string game)
         {
+            // Respond quickly then handle the task in the background.
+            Task respondTask = command.RespondAsync($"Stopping {game}...");
             CommandExecutionResult result = _commandExecutioner.Stop(game);
 
             if (result.Status == ExecutionsStatus.Error)
@@ -67,12 +72,14 @@ namespace TheKrystalShip.Admiral
                 return;
             }
 
-            await command.RespondAsync($"Stopping {game}...");
+            await respondTask;
             await UpdateDiscordChannelAsync(game, GameServerStatus.Offline);
         }
 
         private async Task HandleGameRestartCommandAsync(SocketSlashCommand command, string game)
         {
+            // Respond quickly then handle the task in the background.
+            Task respondTask = command.RespondAsync($"Restarting {game}...");
             CommandExecutionResult result = _commandExecutioner.Restart(game);
 
             if (result.Status == ExecutionsStatus.Error)
@@ -81,7 +88,7 @@ namespace TheKrystalShip.Admiral
                 return;
             }
 
-            await command.RespondAsync($"Restarting {game}...");
+            await respondTask;
         }
 
         private async Task HandleGameStatusCommandAsync(SocketSlashCommand command, string game)
@@ -107,39 +114,38 @@ namespace TheKrystalShip.Admiral
         /// <param name="game">Game channel name</param>
         /// <param name="newStatus">New service status</param>
         /// <returns></returns>
-        private async Task UpdateDiscordChannelAsync(string game, GameServerStatus newStatus)
+        private Task UpdateDiscordChannelAsync(string game, GameServerStatus newStatus)
         {
-            string? discordChannelId = AppSettings.Get($"discord:channelIds:{game}");
+            string discordChannelId = AppSettings.Get($"discord:channelIds:{game}");
 
-            if (discordChannelId is null)
+            if (discordChannelId == string.Empty)
             {
                 _logger.LogError($"Failed to fetch discord channelId from settings file for game: {game}");
-                return;
+                return Task.CompletedTask;
             }
 
-            string? emote = AppSettings.Get($"discord:status:{newStatus}");
+            string emote = AppSettings.Get($"discord:status:{newStatus}");
 
-            if (emote is null)
+            if (emote == string.Empty)
             {
                 _logger.LogError($"Failed to fetch new status emote from settings file. New status: {newStatus}");
-                return;
+                return Task.CompletedTask;
             }
 
             if (_client.GetChannel(ulong.Parse(discordChannelId)) is not SocketGuildChannel discordChannel)
             {
                 _logger.LogError($"Failed to get discord channel with ID: {discordChannelId}");
-                return;
+                return Task.CompletedTask;
             }
 
             string newChannelStatusName = $"{emote}{game}";
-            _logger.LogInformation($"Updating {game} channel name to: {newChannelStatusName}");
+            _logger.LogInformation($"New status for {game}: {newStatus}");
 
             // Change channel name to reflect new GameServerStatus
-            // !This will block the gateway!
-            await discordChannel.ModifyAsync((channel) =>
-            {
-                channel.Name = newChannelStatusName;
-            });
+            // Fire and forget, otherwise it blocks the gateway
+            _ = discordChannel.ModifyAsync((channel) => channel.Name = newChannelStatusName);
+
+            return Task.CompletedTask;
         }
 
         // Doesn't need to run every time the bot starts up, just once is enough
@@ -149,7 +155,14 @@ namespace TheKrystalShip.Admiral
         {
             // Commands are built for a specific guild, global commands require a lot higher
             // level of permissions and they are not needed for our use case.
-            string guildId = AppSettings.Get("discord:guildId") ?? "";
+            string guildId = AppSettings.Get("discord:guildId");
+
+            if (guildId == string.Empty)
+            {
+                _logger.LogError("Guild ID is empty, exiting...");
+                return;
+            }
+
             SocketGuild guild = _client.GetGuild(ulong.Parse(guildId));
 
             List<ApplicationCommandProperties> commandsToRegister = [];

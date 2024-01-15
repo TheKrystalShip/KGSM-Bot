@@ -24,7 +24,8 @@ namespace TheKrystalShip.Admiral
         private static ServiceProvider CreateServices()
         {
             IServiceCollection collection = new ServiceCollection()
-                .AddSingleton(new DiscordSocketConfig() {
+                .AddSingleton(new DiscordSocketConfig()
+                {
                     // https://discord.com/developers/docs/topics/gateway#gateway-intents
                     GatewayIntents =
                         GatewayIntents.Guilds |
@@ -44,7 +45,7 @@ namespace TheKrystalShip.Admiral
 
             client.SlashCommandExecuted += commandHandler.HandleCommand;
             client.Log += OnClientLog;
-            client.Ready += () => OnClientReady(client);
+            client.Ready += () => OnClientReadyAsync(client);
 
             await client.LoginAsync(TokenType.Bot, AppSettings.Get("discord:token"));
             await client.StartAsync();
@@ -59,7 +60,7 @@ namespace TheKrystalShip.Admiral
             return Task.CompletedTask;
         }
 
-        private async Task OnClientReady(DiscordSocketClient client)
+        private async Task OnClientReadyAsync(DiscordSocketClient client)
         {
             await client.SetGameAsync("over servers 👀", null, ActivityType.Watching);
 

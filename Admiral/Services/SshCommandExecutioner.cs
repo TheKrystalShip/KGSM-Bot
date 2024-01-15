@@ -19,12 +19,12 @@ namespace TheKrystalShip.Admiral.Services
         {
             _logger = new();
 
-            string? sshHost = AppSettings.Get("ssh:host");
-            string? sshPort = AppSettings.Get("ssh:port");
-            string? sshUsername = AppSettings.Get("ssh:username");
-            string? sshPassword = AppSettings.Get("ssh:password");
+            string sshHost = AppSettings.Get("ssh:host");
+            string sshPort = AppSettings.Get("ssh:port");
+            string sshUsername = AppSettings.Get("ssh:username");
+            string sshPassword = AppSettings.Get("ssh:password");
 
-            if (sshHost is null || sshPort is null || sshUsername is null || sshPassword is null)
+            if (sshHost == string.Empty || sshPort == string.Empty || sshUsername == string.Empty || sshPassword == string.Empty)
             {
                 throw new ArgumentNullException("One or more connection details were null");
             }
@@ -35,7 +35,7 @@ namespace TheKrystalShip.Admiral.Services
             try
             {
                 _sshClient.Connect();
-                _logger.LogInformation("SSH Connection established to {0}", sshHost);
+                _logger.LogInformation($"SSH Connection established to {sshHost}");
             }
             catch (Exception e)
             {
@@ -78,54 +78,6 @@ namespace TheKrystalShip.Admiral.Services
             }
 
             return new CommandExecutionResult(ExecutionsStatus.Error, executionResult);
-        }
-
-        public CommandExecutionResult Start(string process)
-        {
-            string? startScript = AppSettings.Get("scripts:start");
-
-            if (startScript is null)
-            {
-                throw new ArgumentNullException(startScript);
-            }
-
-            return Execute(startScript, [process]);
-        }
-
-        public CommandExecutionResult Stop(string process)
-        {
-            string? stopScript = AppSettings.Get("scripts:stop");
-
-            if (stopScript is null)
-            {
-                throw new ArgumentNullException(stopScript);
-            }
-
-            return Execute(stopScript, [process]);
-        }
-
-        public CommandExecutionResult Restart(string process)
-        {
-            string? restartScript = AppSettings.Get("scripts:restart");
-
-            if (restartScript is null)
-            {
-                throw new ArgumentNullException(restartScript);
-            }
-
-            return Execute(restartScript, [process]);
-        }
-
-        public CommandExecutionResult Status(string process)
-        {
-            string? statusScript = AppSettings.Get("scripts:status");
-
-            if (statusScript is null)
-            {
-                throw new ArgumentNullException(statusScript);
-            }
-
-            return Execute(statusScript, [process]);
         }
 
         private CommandExecutionResult ExecuteWithSudo(string command, string[] args)

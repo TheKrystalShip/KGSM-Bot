@@ -27,14 +27,14 @@ namespace TheKrystalShip.Admiral.Tools
             return _config;
         }
 
-        public static string? Get(string path)
+        public static string Get(string path)
         {
             if (path.StartsWith("settings:"))
             {
-                return _config[path];
+                return _config[path] ?? string.Empty;
             }
 
-            return _config.GetSection("settings")[path];
+            return _config.GetSection("settings")[path] ?? string.Empty;
         }
 
         public static IConfigurationRoot GetAll()
