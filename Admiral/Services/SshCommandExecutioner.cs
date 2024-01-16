@@ -16,7 +16,6 @@ namespace TheKrystalShip.Admiral.Services
     {
         private readonly Logger<SshCommandExecutioner> _logger;
         private readonly SshClient _sshClient;
-        private readonly string _sudoStringPrepend = $"echo -e '{AppSettings.Get("ssh:password")}' | sudo -S ";
 
         public SshCommandExecutioner()
         {
@@ -50,42 +49,43 @@ namespace TheKrystalShip.Admiral.Services
         {
             string argsCommand = string.Concat(command + " ", string.Join(" ", args));
 
-            SshCommand result = _sshClient.RunCommand(argsCommand);
-            string executionResult;
+            SshCommand commandExecution = _sshClient.RunCommand(argsCommand);
 
-            // Success
-            if (result.ExitStatus is 0)
+            /*
+            * Properties:
+            *     - Result: (can be empty) string, not null
+            *     - Error: (can be empty) string, not null
+            *     - ExitStatus: int
+            * RULES:
+            *     - ExitStatus different than 0 doesn't always indicate there's ben an error, don't trust it.
+            *     - Result can be empty after a successful command, check Error & ExitStatus
+            *     - Error can be empty but an error might have still ocurred, check Result & ExitStatus
+            */
+            return commandExecution switch
             {
-                executionResult = result.Execute();
-                return new Result(executionResult);
-            }
+                // Success
+                // Result is empty, ExitStatus is 0, Error is empty, treat as success
+                { Result: var result, ExitStatus: var exitStatus, Error: var error }
+                    when (result == string.Empty) && (exitStatus == 0) && (error == string.Empty) => new Result(),
 
-            // systemctl status returns exit code 3 for some reason
-            if (result.ExitStatus == 3 && result.Error == string.Empty)
-            {
-                executionResult = result.Execute();
-                return new Result(executionResult);
-            }
+                // Success
+                // Error is empty but Result contains something, treat as success
+                { Result: var result, Error: var error }
+                    when (result != string.Empty) && (error == string.Empty) => new Result(result),
 
-            // TODO: Check for actual error message, don't assume it's lack of sudo
-            if (result.Error is not null && result.ExitStatus is not 0)
-            {
-                return ExecuteWithSudo(command, args);
-            }
+                // Fail
+                // ExitStatus is 0 but Error contains something, treat as fail
+                { ExitStatus: var exitStatus, Error: var error }
+                    when (exitStatus == 0) && (error != string.Empty) => new Result(CommandStatus.Error, error),
 
-            executionResult = result.Execute();
+                // No f-ing clue
+                // Result is not empty, ExitStatus is not 0 but Error is empty, treat as... fail, just to be sure
+                { Result: var result, ExitStatus: var exitStatus, Error: var error }
+                    when (result != string.Empty) && (exitStatus != 0) && (error == string.Empty) => new Result(CommandStatus.Error, result),
 
-            if (executionResult == "")
-            {
-                return new Result();
-            }
-
-            return new Result(CommandStatus.Error, executionResult);
-        }
-
-        private Result ExecuteWithSudo(string command, string[] args)
-        {
-            return Execute(_sudoStringPrepend + command, args);
+                // Default to error
+                _ => new Result(CommandStatus.Error, commandExecution.Result)
+            };
         }
     }
 }

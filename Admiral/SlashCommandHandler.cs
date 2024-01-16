@@ -1,4 +1,3 @@
-using Discord;
 using Discord.WebSocket;
 using TheKrystalShip.Admiral.Domain;
 using TheKrystalShip.Admiral.Services;
@@ -23,23 +22,19 @@ namespace TheKrystalShip.Admiral
         {
             // All commands require the user to specify a game.
             string game = (string) (command.Data.Options?.First()?.Value ?? "");
-            string commandFormatted = (command.Data.Name ?? "") + " " + game;
 
-            _logger.LogInformation($"/{commandFormatted}");
-
-            switch (command.Data.Name)
+            Task action = command.Data.Name switch
             {
-                case "start":   await HandleGameStartCommandAsync(command, game);
-                    break;
-                case "stop":    await HandleGameStopCommandAsync(command, game);
-                    break;
-                case "restart": await HandleGameRestartCommandAsync(command, game);
-                    break;
-                case "status":  await HandleGameStatusCommandAsync(command, game);
-                    break;
-                default:        await command.RespondAsync("Command or Game not found");
-                    break;
-            }
+                "start"     => HandleGameStartCommandAsync(command, game),
+                "stop"      => HandleGameStopCommandAsync(command, game),
+                "restart"   => HandleGameRestartCommandAsync(command, game),
+                "status"    => HandleGameStatusCommandAsync(command, game),
+                _           => command.RespondAsync("Command or Game not found")
+            };
+
+            _logger.LogInformation($"/{(command.Data.Name ?? "") + " " + game}");
+
+            await action;
         }
 
         private async Task HandleGameStartCommandAsync(SocketSlashCommand command, string game)
@@ -100,7 +95,7 @@ namespace TheKrystalShip.Admiral
                 return;
             }
 
-            await command.RespondAsync(result.Output ?? "Received no output");
+            await command.RespondAsync(result.Output == string.Empty ? "Received no output" : result.Output);
             return;
         }
     }
