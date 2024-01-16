@@ -2,7 +2,6 @@ using Discord;
 using Discord.WebSocket;
 using TheKrystalShip.Admiral.Domain;
 using TheKrystalShip.Admiral.Services;
-using TheKrystalShip.Admiral.Tools;
 using TheKrystalShip.Logging;
 
 namespace TheKrystalShip.Admiral
@@ -10,23 +9,23 @@ namespace TheKrystalShip.Admiral
     public class SlashCommandHandler
     {
         private readonly Logger<SlashCommandHandler> _logger;
-        private readonly DiscordSocketClient _client;
         private readonly CommandExecutioner _commandExecutioner;
 
-        public SlashCommandHandler(DiscordSocketClient client, CommandExecutioner commandExecutioner)
+        public event Func<RunningStatusUpdatedArgs, Task>? RunningStatusUpdated;
+
+        public SlashCommandHandler()
         {
             _logger = new();
-            _client = client;
-            _commandExecutioner = commandExecutioner;
+            _commandExecutioner = new();
         }
 
-        public async Task HandleCommand(SocketSlashCommand command)
+        public async Task OnSlashCommandExecuted(SocketSlashCommand command)
         {
             // All commands require the user to specify a game.
             string game = (string) (command.Data.Options?.First()?.Value ?? "");
             string commandFormatted = (command.Data.Name ?? "") + " " + game;
 
-            _logger.LogInformation($"Executing /{commandFormatted}");
+            _logger.LogInformation($"/{commandFormatted}");
 
             switch (command.Data.Name)
             {
@@ -38,7 +37,7 @@ namespace TheKrystalShip.Admiral
                     break;
                 case "status":  await HandleGameStatusCommandAsync(command, game);
                     break;
-                default:        await command.RespondAsync("Could not find command");
+                default:        await command.RespondAsync("Command or Game not found");
                     break;
             }
         }
@@ -57,7 +56,7 @@ namespace TheKrystalShip.Admiral
             }
 
             await respondTask;
-            await UpdateDiscordChannelAsync(game, RunningStatus.Online);
+            RunningStatusUpdated?.Invoke(new(game, RunningStatus.Online));
         }
 
         private async Task HandleGameStopCommandAsync(SocketSlashCommand command, string game)
@@ -73,7 +72,7 @@ namespace TheKrystalShip.Admiral
             }
 
             await respondTask;
-            await UpdateDiscordChannelAsync(game, RunningStatus.Offline);
+            RunningStatusUpdated?.Invoke(new(game, RunningStatus.Offline));
         }
 
         private async Task HandleGameRestartCommandAsync(SocketSlashCommand command, string game)
@@ -101,109 +100,8 @@ namespace TheKrystalShip.Admiral
                 return;
             }
 
-            if (result.Output != string.Empty)
-            {
-                await command.RespondAsync(result.Output);
-                return;
-            }
-        }
-
-        /// <summary>
-        /// Updates the game's discord channel to reflect the new service status
-        /// </summary>
-        /// <param name="game">Game channel name</param>
-        /// <param name="newStatus">New service status</param>
-        /// <returns></returns>
-        private Task UpdateDiscordChannelAsync(string game, RunningStatus newStatus)
-        {
-            string discordChannelId = AppSettings.Get($"discord:channelIds:{game}");
-
-            if (discordChannelId == string.Empty)
-            {
-                _logger.LogError($"Failed to fetch discord channelId from settings file for game: {game}");
-                return Task.CompletedTask;
-            }
-
-            string emote = AppSettings.Get($"discord:status:{newStatus}");
-
-            if (emote == string.Empty)
-            {
-                _logger.LogError($"Failed to fetch new status emote from settings file. New status: {newStatus}");
-                return Task.CompletedTask;
-            }
-
-            if (_client.GetChannel(ulong.Parse(discordChannelId)) is not SocketGuildChannel discordChannel)
-            {
-                _logger.LogError($"Failed to get discord channel with ID: {discordChannelId}");
-                return Task.CompletedTask;
-            }
-
-            string newChannelStatusName = $"{emote}{game}";
-            _logger.LogInformation($"New status for {game}: {newStatus}");
-
-            // Change channel name to reflect new GameServerStatus
-            // Fire and forget, otherwise it blocks the gateway
-            _ = discordChannel.ModifyAsync((channel) => channel.Name = newChannelStatusName);
-
-            return Task.CompletedTask;
-        }
-
-        // Doesn't need to run every time the bot starts up, just once is enough
-        // If commands needs changing, they all need to be de-registered firsts, then
-        // registered again.
-        public async Task RegisterSlashCommands()
-        {
-            // Commands are built for a specific guild, global commands require a lot higher
-            // level of permissions and they are not needed for our use case.
-            string guildId = AppSettings.Get("discord:guildId");
-
-            if (guildId == string.Empty)
-            {
-                _logger.LogError("Guild ID is empty, exiting...");
-                return;
-            }
-
-            SocketGuild guild = _client.GetGuild(ulong.Parse(guildId));
-
-            List<ApplicationCommandProperties> commandsToRegister = [];
-
-            SlashCommandBuilder gameStartCommand = new SlashCommandBuilder()
-                .WithName("start")
-                .WithDescription("Start a game server")
-                .AddOption("game", ApplicationCommandOptionType.String, "Game server name", isRequired: true);
-
-            SlashCommandBuilder gameStopCommand = new SlashCommandBuilder()
-                .WithName("stop")
-                .WithDescription("Stop a game server")
-                .AddOption("game", ApplicationCommandOptionType.String, "Game server name", isRequired: true);
-
-            SlashCommandBuilder gameRestartCommand = new SlashCommandBuilder()
-                .WithName("restart")
-                .WithDescription("Restart a game server")
-                .AddOption("game", ApplicationCommandOptionType.String, "Game server name", isRequired: true);
-
-            SlashCommandBuilder gameStatusCommand = new SlashCommandBuilder()
-                .WithName("status")
-                .WithDescription("Check the status of a game server")
-                .AddOption("game", ApplicationCommandOptionType.String, "Game server name", isRequired: true);
-
-            commandsToRegister.Add(gameStartCommand.Build());
-            commandsToRegister.Add(gameStopCommand.Build());
-            commandsToRegister.Add(gameRestartCommand.Build());
-            commandsToRegister.Add(gameStatusCommand.Build());
-
-            try
-            {
-                // This takes time and will block the gateway
-                foreach (var command in commandsToRegister)
-                {
-                    await guild.CreateApplicationCommandAsync(command);
-                }
-            }
-            catch (Exception exception)
-            {
-                _logger.LogError(exception);
-            }
+            await command.RespondAsync(result.Output ?? "Received no output");
+            return;
         }
     }
 }
