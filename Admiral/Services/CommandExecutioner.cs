@@ -17,7 +17,7 @@ namespace TheKrystalShip.Admiral.Services
 #if DEBUG
             _internal = new SshCommandExecutioner();
 #else
-            _internalExecutioner = new ProcessCommandExecutioner();
+            _internal = new ProcessCommandExecutioner();
 #endif
         }
 
