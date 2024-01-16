@@ -3,7 +3,8 @@ namespace TheKrystalShip.Admiral.Domain
     public enum CommandStatus
     {
         Success,
-        Error
+        Error,
+        Ignore
     }
 
     public enum ServiceStatus

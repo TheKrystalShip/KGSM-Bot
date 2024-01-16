@@ -8,6 +8,7 @@ namespace TheKrystalShip.Admiral.Domain
         public string Output { get; set; }
 
         public Result() : this(CommandStatus.Success, string.Empty) {}
+        public Result(CommandStatus status) : this(status, string.Empty) {}
         public Result(string output) : this(CommandStatus.Success, output) {}
 
         public Result(CommandStatus status, string output)

@@ -57,7 +57,7 @@ namespace TheKrystalShip.Admiral
             string game = args.Game;
             RunningStatus newStatus = args.RunningStatus;
 
-            string discordChannelId = AppSettings.Get($"discord:channelIds:{game}");
+            string discordChannelId = AppSettings.Get($"games:{game}:channelId");
 
             if (discordChannelId == string.Empty)
             {
@@ -127,7 +127,7 @@ namespace TheKrystalShip.Admiral
                 return;
             }
 
-            List<ApplicationCommandProperties> commandsToRegister = SlashCommandsBuilder.GetCommands();
+            List<ApplicationCommandProperties> commandsToRegister = SlashCommandsBuilder.GetCommandList();
 
             try
             {

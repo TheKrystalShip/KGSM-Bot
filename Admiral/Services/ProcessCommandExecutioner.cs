@@ -16,6 +16,9 @@ namespace TheKrystalShip.Admiral.Services
             _logger = new();
         }
 
+        public Result Execute(string command)
+            => Execute(command, []);
+
         public Result Execute(string command, string[] args)
         {
             ProcessStartInfo runningInfo = new ProcessStartInfo()
@@ -41,11 +44,16 @@ namespace TheKrystalShip.Admiral.Services
             string stdout = process.StandardOutput.ReadToEnd();
             string stderr = process.StandardError.ReadToEnd();
 
-            if (exitCode == 0 && stderr == string.Empty)
-            {
+            // Specific to the versionCheck script
+            // exitCode will be 1, stderr will have the new version number and stdout will be empty
+            if ((exitCode == 1) && (stderr != string.Empty) && (stdout == string.Empty))
                 return new Result(stdout);
-            }
 
+            // Exit code 0 and no error probably means success
+            if (exitCode == 0 && stderr == string.Empty)
+                return new Result(stdout);
+
+            // Default to error
             return new Result(CommandStatus.Error, stderr);
         }
     }

@@ -51,5 +51,22 @@ namespace TheKrystalShip.Admiral.Services
 
         public Result Disable(string process)
             => _internal.Execute(DISABLE_SCRIPT, [process]);
+
+        public Result CheckForUpdate(string process)
+        {
+            string workingDir = AppSettings.Get($"games:{process}:workingDir");
+
+            if (workingDir == string.Empty)
+                return new Result(CommandStatus.Error, $"Failed to locate {process} workingDir");
+
+            string versionCheckScript = AppSettings.Get($"games:{process}:versionCheckScript");
+
+            if (versionCheckScript == string.Empty)
+                return new Result(CommandStatus.Error, "Failed to locate versionCheck script");
+
+            string scriptAbsolutePath = $"{workingDir}/{versionCheckScript}";
+
+            return _internal.Execute(scriptAbsolutePath);
+        }
     }
 }

@@ -45,6 +45,9 @@ namespace TheKrystalShip.Admiral.Services
             }
         }
 
+        public Result Execute(string command)
+            => Execute(command, []);
+
         public Result Execute(string command, string[] args)
         {
             string argsCommand = string.Concat(command + " ", string.Join(" ", args));
@@ -67,25 +70,27 @@ namespace TheKrystalShip.Admiral.Services
             return commandExecution switch
             {
                 // Success
-                // ExitStatus is 0 but Error contains something, treat as success
-                // systemctl enable/disable does this... ExitStatus 0 & the output is in Error instead of Result
-                { ExitStatus: var exitStatus, Error: var error }
-                    when (exitStatus == 0) && (error != string.Empty) => new Result(CommandStatus.Success, error),
-
-                // Success
                 // Result is empty, ExitStatus is 0, Error is empty, treat as success
                 { Result: var result, ExitStatus: var exitStatus, Error: var error }
                     when (result == string.Empty) && (exitStatus == 0) && (error == string.Empty) => new Result(),
 
                 // Success
                 // Error is empty but Result contains something, treat as success
-                { Result: var result, Error: var error }
-                    when (result != string.Empty) && (error == string.Empty) => new Result(result),
+                // ExitCode 1 is used by the versionCheck script, so we check for anything other than 1
+                { Result: var result, ExitStatus: var exitStatus, Error: var error }
+                    when (result != string.Empty) && (error == string.Empty) && (exitStatus != 1) => new Result(result),
+
+                // Success
+                // This one is specific for the versionCheck script
+                // Error contains the new version number IF ExitStatus is 1 and Result is empty
+                // IMPORTANT: Must return an CommandStatus.Error result, since technically ExitCode 1 is an error.
+                { Result: var result, ExitStatus: var exitStatus, Error: var error }
+                    when (exitStatus == 1) && (error != string.Empty) && (result == string.Empty) => new Result(CommandStatus.Error, result),
 
                 // Success?
                 // Result is empty, ExitStatus is 0 but Error has something
                 // This happens when using the `systemctl enable/disable` command, for some reason the output is in Error
-                //  instead of being in Result 🤦‍♂️
+                // instead of being in Result 🤦‍♂️
                 { Result: var result, ExitStatus: var exitStatus, Error: var error }
                     when (result == string.Empty) && (exitStatus == 0) && (error != string.Empty) => new Result(CommandStatus.Success, error),
 

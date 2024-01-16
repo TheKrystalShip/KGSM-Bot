@@ -11,6 +11,11 @@ namespace TheKrystalShip.Admiral
         private readonly Logger<SlashCommandHandler> _logger;
         private readonly CommandExecutioner _commandExecutioner;
 
+        private readonly string[] waitVariants = [
+            "give me a sec", "will take a sec", "hold on", "I'll get back to you",
+            "hang on", "just a moment", "gimme a minute", "processing", "beep boop", "brb"
+        ];
+
         public event Func<RunningStatusUpdatedArgs, Task>? RunningStatusUpdated;
 
         public SlashCommandHandler()
@@ -25,20 +30,21 @@ namespace TheKrystalShip.Admiral
             string game = (string)(command.Data.Options?.First()?.Value ?? "");
 
             // Received command
-            _logger.LogInformation("Request", $">>> /{(command.Data.Name ?? "") + " " + game}");
+            _logger.LogInformation("Discord", $">>> /{(command.Data.Name ?? "") + " " + game}");
 
             Result result = command.Data.Name switch
             {
-                "start"     => await OnGameStartCommandAsync(command, game),
-                "stop"      => await OnGameStopCommandAsync(command, game),
-                "restart"   => await OnGameRestartCommandAsync(command, game),
-                "status"    => OnGameStatusCommand(game),
-                "autostart" => OnGameAutostartCommand(command, game),
-                "is-active" => OnGameIsActiveCommand(game),
-                "is-enabled"=> OnGameIsEnabledCommand(game),
+                Command.START                   => await OnGameStartCommandAsync(command, game),
+                Command.STOP                    => await OnGameStopCommandAsync(command, game),
+                Command.RESTART                 => await OnGameRestartCommandAsync(command, game),
+                Command.CHECK_FOR_UPDATE        => await OnGameCheckForUpdateCommand(command, game),
+                Command.STATUS                  => OnGameStatusCommand(game),
+                Command.SET_AUTOSTART           => OnGameAutostartCommand(command, game),
+                Command.IS_ONLINE               => OnGameIsActiveCommand(game),
+                Command.IS_AUTOSTART_ENABLED    => OnGameIsEnabledCommand(game),
 
                 // Default
-                _           => new Result(CommandStatus.Error, "Command or Game not found")
+                _ => new Result(CommandStatus.Error, "Command or Game not found")
             };
 
             if (result.Status == CommandStatus.Error)
@@ -48,9 +54,38 @@ namespace TheKrystalShip.Admiral
             }
 
             // Returned result
-            _logger.LogInformation("Response", $"<<< {result.Output}");
+            _logger.LogInformation("Discord", $"<<< {result.Output}");
 
-            await command.RespondAsync(result.Output.FirstCharToUpper());
+            // Force to not respond, assume it was responded somewhere else
+            if (result.Status != CommandStatus.Ignore)
+                await command.RespondAsync(result.Output.FirstCharToUpper());
+        }
+
+        private async Task<Result> OnGameCheckForUpdateCommand(SocketSlashCommand command, string game)
+        {
+            // Sprinkle some personality
+            Random random = new();
+            string randomWait = waitVariants[random.Next(waitVariants.Length)];
+            string elipses = random.Next() % 2 == 0 ? "..." : "";
+
+            // Checking for update take a while, respond first then follow up once execution is finished
+            await command.RespondAsync($"Checking for {game} updates, {randomWait}{elipses}");
+
+            Result result = _commandExecutioner.CheckForUpdate(game);
+
+            // Default answer with no update before checking
+            string followupText = $"No update found for {game}";
+
+            // CheckForUpdate returns CommandStatus.Error when there's an update
+            if (result.Status == CommandStatus.Error)
+            {
+                // RunningStatusUpdated?.Invoke(new(game, RunningStatus.NeedsUpdate));
+                followupText = $"New version found: {result.Output}";
+            }
+
+            await command.FollowupAsync(followupText);
+
+            return new Result(CommandStatus.Ignore, followupText);
         }
 
         private Result OnGameAutostartCommand(SocketSlashCommand command, string game)
@@ -82,7 +117,8 @@ namespace TheKrystalShip.Admiral
 
         private Result OnGameIsEnabledCommand(string game)
         {
-            return _commandExecutioner.IsEnabled(game);
+            Result result = _commandExecutioner.IsEnabled(game);
+            return new Result(CommandStatus.Success, $"Autostart is {result.Output.Trim()} for {game}");
         }
 
         private async Task<Result> OnGameStartCommandAsync(SocketSlashCommand command, string game)
@@ -97,7 +133,7 @@ namespace TheKrystalShip.Admiral
                 result.Output = $"Started {game}";
             }
 
-            return result;
+            return new Result(CommandStatus.Ignore, result.Output);
         }
 
         private async Task<Result> OnGameStopCommandAsync(SocketSlashCommand command, string game)
@@ -112,7 +148,7 @@ namespace TheKrystalShip.Admiral
                 result.Output = $"Stopped {game}";
             }
 
-            return result;
+            return new Result(CommandStatus.Ignore, result.Output);
         }
 
         private async Task<Result> OnGameRestartCommandAsync(SocketSlashCommand command, string game)
@@ -124,7 +160,7 @@ namespace TheKrystalShip.Admiral
             if (result.Status == CommandStatus.Success)
                 result.Output = $"Restarted {game}";
 
-            return result;
+            return new Result(CommandStatus.Ignore, result.Output);
         }
 
         private Result OnGameStatusCommand(string game)
