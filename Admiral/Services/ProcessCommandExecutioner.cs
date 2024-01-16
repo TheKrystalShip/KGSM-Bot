@@ -7,16 +7,16 @@ namespace TheKrystalShip.Admiral.Services
     /// <summary>
     /// Used to run commands locally on the same machine as the game servers
     /// </summary>
-    public class LocalCommandExecutioner : ICommandExecutioner
+    public class ProcessCommandExecutioner : ICommandExecutioner
     {
-        private readonly Logger<LocalCommandExecutioner> _logger;
+        private readonly Logger<ProcessCommandExecutioner> _logger;
 
-        public LocalCommandExecutioner()
+        public ProcessCommandExecutioner()
         {
             _logger = new();
         }
 
-        public CommandExecutionResult Execute(string command, string[] args)
+        public Result Execute(string command, string[] args)
         {
             ProcessStartInfo runningInfo = new ProcessStartInfo()
             {
@@ -32,7 +32,7 @@ namespace TheKrystalShip.Admiral.Services
             if (process is null)
             {
                 _logger.LogError("Process failed to start");
-                return new CommandExecutionResult(ExecutionsStatus.Error, "Process failed to start");
+                return new Result(CommandStatus.Error, "Process failed to start");
             }
 
             process.WaitForExit();
@@ -42,10 +42,10 @@ namespace TheKrystalShip.Admiral.Services
 
             if (exitCode is 0)
             {
-                return new CommandExecutionResult(output);
+                return new Result(output);
             }
 
-            return new CommandExecutionResult(ExecutionsStatus.Error, output);
+            return new Result(CommandStatus.Error, output);
         }
     }
 }

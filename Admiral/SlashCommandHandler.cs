@@ -48,41 +48,41 @@ namespace TheKrystalShip.Admiral
             // Respond quickly then handle the task in the background.
             Task respondTask = command.RespondAsync($"Starting {game}...");
 
-            CommandExecutionResult result = _commandExecutioner.Start(game);
+            Result result = _commandExecutioner.Start(game);
 
-            if (result.Status == ExecutionsStatus.Error)
+            if (result.Status == CommandStatus.Error)
             {
                 await command.RespondAsync($"There might have been an error: {result.Output}");
                 return;
             }
 
             await respondTask;
-            await UpdateDiscordChannelAsync(game, GameServerStatus.Online);
+            await UpdateDiscordChannelAsync(game, RunningStatus.Online);
         }
 
         private async Task HandleGameStopCommandAsync(SocketSlashCommand command, string game)
         {
             // Respond quickly then handle the task in the background.
             Task respondTask = command.RespondAsync($"Stopping {game}...");
-            CommandExecutionResult result = _commandExecutioner.Stop(game);
+            Result result = _commandExecutioner.Stop(game);
 
-            if (result.Status == ExecutionsStatus.Error)
+            if (result.Status == CommandStatus.Error)
             {
                 await command.RespondAsync($"There might have been an error: {result.Output}");
                 return;
             }
 
             await respondTask;
-            await UpdateDiscordChannelAsync(game, GameServerStatus.Offline);
+            await UpdateDiscordChannelAsync(game, RunningStatus.Offline);
         }
 
         private async Task HandleGameRestartCommandAsync(SocketSlashCommand command, string game)
         {
             // Respond quickly then handle the task in the background.
             Task respondTask = command.RespondAsync($"Restarting {game}...");
-            CommandExecutionResult result = _commandExecutioner.Restart(game);
+            Result result = _commandExecutioner.Restart(game);
 
-            if (result.Status == ExecutionsStatus.Error)
+            if (result.Status == CommandStatus.Error)
             {
                 await command.RespondAsync($"There might have been an error: {result.Output}");
                 return;
@@ -93,9 +93,9 @@ namespace TheKrystalShip.Admiral
 
         private async Task HandleGameStatusCommandAsync(SocketSlashCommand command, string game)
         {
-            CommandExecutionResult result = _commandExecutioner.Status(game);
+            Result result = _commandExecutioner.Status(game);
 
-            if (result.Status == ExecutionsStatus.Error)
+            if (result.Status == CommandStatus.Error)
             {
                 await command.RespondAsync($"There might have been an error: {result.Output}");
                 return;
@@ -114,7 +114,7 @@ namespace TheKrystalShip.Admiral
         /// <param name="game">Game channel name</param>
         /// <param name="newStatus">New service status</param>
         /// <returns></returns>
-        private Task UpdateDiscordChannelAsync(string game, GameServerStatus newStatus)
+        private Task UpdateDiscordChannelAsync(string game, RunningStatus newStatus)
         {
             string discordChannelId = AppSettings.Get($"discord:channelIds:{game}");
 

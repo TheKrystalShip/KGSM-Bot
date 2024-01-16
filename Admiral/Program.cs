@@ -1,6 +1,5 @@
 ﻿using Discord;
 using Discord.WebSocket;
-using Microsoft.Extensions.DependencyInjection;
 using TheKrystalShip.Admiral.Services;
 using TheKrystalShip.Admiral.Tools;
 using TheKrystalShip.Logging;
@@ -11,7 +10,6 @@ namespace TheKrystalShip.Admiral
     {
         const string REGISTER_COMMANDS_ARG = "--register-commands";
 
-        private readonly IServiceProvider _services;
         private readonly Logger<Program> _logger;
 
         public static void Main(string[] args)
@@ -20,30 +18,19 @@ namespace TheKrystalShip.Admiral
         public Program()
         {
             _logger = new();
-            _services = CreateServices();
         }
 
-        private static ServiceProvider CreateServices()
+        public async Task RunAsync(string[] args)
         {
-            IServiceCollection collection = new ServiceCollection()
-                .AddSingleton(new DiscordSocketConfig()
+            DiscordSocketClient client = new(new DiscordSocketConfig()
                 {
                     // https://discord.com/developers/docs/topics/gateway#gateway-intents
                     GatewayIntents =
                         GatewayIntents.Guilds |
                         GatewayIntents.GuildMessages
-                })
-                .AddSingleton(new CommandExecutioner())
-                .AddSingleton<DiscordSocketClient>()
-                .AddSingleton<SlashCommandHandler>();
+                });
 
-            return collection.BuildServiceProvider();
-        }
-
-        public async Task RunAsync(string[] args)
-        {
-            DiscordSocketClient client = _services.GetRequiredService<DiscordSocketClient>();
-            SlashCommandHandler commandHandler = _services.GetRequiredService<SlashCommandHandler>();
+            SlashCommandHandler commandHandler = new(client, new CommandExecutioner());
 
             client.SlashCommandExecuted += commandHandler.HandleCommand;
             client.Log += OnClientLog;

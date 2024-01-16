@@ -1,6 +1,6 @@
 namespace TheKrystalShip.Admiral.Domain
 {
-    public enum ExecutionsStatus
+    public enum CommandStatus
     {
         Success,
         Error
@@ -13,7 +13,7 @@ namespace TheKrystalShip.Admiral.Domain
         Error
     }
 
-    public enum GameServerStatus
+    public enum RunningStatus
     {
         Online,
         Offline,

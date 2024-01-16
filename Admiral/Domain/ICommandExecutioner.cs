@@ -2,10 +2,10 @@ namespace TheKrystalShip.Admiral.Domain
 {
     public interface ICommandExecutioner
     {
-        public CommandExecutionResult Execute(string command, string[] args);
-        public CommandExecutionResult Start(string process) => new();
-        public CommandExecutionResult Stop(string process) => new();
-        public CommandExecutionResult Restart(string process) => new();
-        public CommandExecutionResult Status(string process) => new();
+        public Result Execute(string command, string[] args);
+        public Result Start(string process) => new();
+        public Result Stop(string process) => new();
+        public Result Restart(string process) => new();
+        public Result Status(string process) => new();
     }
 }

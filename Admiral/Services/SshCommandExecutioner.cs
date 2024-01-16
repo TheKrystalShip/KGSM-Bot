@@ -1,3 +1,6 @@
+#if DEBUG
+// Don't include this file in prod
+
 using TheKrystalShip.Admiral.Tools;
 using Renci.SshNet;
 using TheKrystalShip.Admiral.Domain;
@@ -43,7 +46,7 @@ namespace TheKrystalShip.Admiral.Services
             }
         }
 
-        public CommandExecutionResult Execute(string command, string[] args)
+        public Result Execute(string command, string[] args)
         {
             string argsCommand = string.Concat(command + " ", string.Join(" ", args));
 
@@ -54,14 +57,14 @@ namespace TheKrystalShip.Admiral.Services
             if (result.ExitStatus is 0)
             {
                 executionResult = result.Execute();
-                return new CommandExecutionResult(executionResult);
+                return new Result(executionResult);
             }
 
             // systemctl status returns exit code 3 for some reason
             if (result.ExitStatus == 3 && result.Error == string.Empty)
             {
                 executionResult = result.Execute();
-                return new CommandExecutionResult(executionResult);
+                return new Result(executionResult);
             }
 
             // TODO: Check for actual error message, don't assume it's lack of sudo
@@ -74,15 +77,17 @@ namespace TheKrystalShip.Admiral.Services
 
             if (executionResult == "")
             {
-                return new CommandExecutionResult();
+                return new Result();
             }
 
-            return new CommandExecutionResult(ExecutionsStatus.Error, executionResult);
+            return new Result(CommandStatus.Error, executionResult);
         }
 
-        private CommandExecutionResult ExecuteWithSudo(string command, string[] args)
+        private Result ExecuteWithSudo(string command, string[] args)
         {
             return Execute(_sudoStringPrepend + command, args);
         }
     }
 }
+
+#endif
