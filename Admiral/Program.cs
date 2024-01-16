@@ -61,22 +61,21 @@ namespace TheKrystalShip.Admiral
 
             if (discordChannelId == string.Empty)
             {
-                _logger.LogError($"Failed to fetch discord channelId from settings file for game: {game}");
-                await Task.CompletedTask;
+                _logger.LogError($"Failed to get discordChannelId for game: {game}");
+                return;
             }
 
             string emote = AppSettings.Get($"discord:status:{newStatus}");
 
             if (emote == string.Empty)
             {
-                _logger.LogError($"Failed to fetch new status emote from settings file. New status: {newStatus}");
-                await Task.CompletedTask;
+                _logger.LogError($"Failed to get new status emote from settings file. New status: {newStatus}");
+                return;
             }
 
             if (_client.GetChannel(ulong.Parse(discordChannelId)) is not SocketGuildChannel discordChannel)
             {
-                _logger.LogError($"Failed to get discord channel with ID: {discordChannelId}");
-                await Task.CompletedTask;
+                _logger.LogError($"Failed to get SocketGuildChannel with ID: {discordChannelId}");
                 return;
             }
 
@@ -122,44 +121,22 @@ namespace TheKrystalShip.Admiral
 
             SocketGuild guild = _client.GetGuild(ulong.Parse(guildId));
 
-            List<ApplicationCommandProperties> commandsToRegister = [];
+            if (guild is null)
+            {
+                _logger.LogError("Failed to get guild from client, exiting");
+                return;
+            }
 
-            SlashCommandBuilder gameStartCommand = new SlashCommandBuilder()
-                .WithName("start")
-                .WithDescription("Start a game server")
-                .AddOption("game", ApplicationCommandOptionType.String, "Game server name", isRequired: true);
-
-            SlashCommandBuilder gameStopCommand = new SlashCommandBuilder()
-                .WithName("stop")
-                .WithDescription("Stop a game server")
-                .AddOption("game", ApplicationCommandOptionType.String, "Game server name", isRequired: true);
-
-            SlashCommandBuilder gameRestartCommand = new SlashCommandBuilder()
-                .WithName("restart")
-                .WithDescription("Restart a game server")
-                .AddOption("game", ApplicationCommandOptionType.String, "Game server name", isRequired: true);
-
-            SlashCommandBuilder gameStatusCommand = new SlashCommandBuilder()
-                .WithName("status")
-                .WithDescription("Check the status of a game server")
-                .AddOption("game", ApplicationCommandOptionType.String, "Game server name", isRequired: true);
-
-            commandsToRegister.Add(gameStartCommand.Build());
-            commandsToRegister.Add(gameStopCommand.Build());
-            commandsToRegister.Add(gameRestartCommand.Build());
-            commandsToRegister.Add(gameStatusCommand.Build());
+            List<ApplicationCommandProperties> commandsToRegister = SlashCommandsBuilder.GetCommands();
 
             try
             {
                 // This takes time and will block the gateway
-                foreach (var command in commandsToRegister)
-                {
-                    await guild.CreateApplicationCommandAsync(command);
-                }
+                await guild.BulkOverwriteApplicationCommandAsync([.. commandsToRegister]);
             }
-            catch (Exception exception)
+            catch (Exception e)
             {
-                _logger.LogError(exception);
+                _logger.LogError(e);
             }
         }
     }

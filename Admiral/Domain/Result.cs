@@ -1,3 +1,5 @@
+using TheKrystalShip.Admiral.Tools;
+
 namespace TheKrystalShip.Admiral.Domain
 {
     public class Result
@@ -12,6 +14,11 @@ namespace TheKrystalShip.Admiral.Domain
         {
             Status = status;
             Output = output;
+        }
+
+        public override string ToString()
+        {
+            return $"{Status} - {Output.FirstCharToUpper()}";
         }
     }
 }

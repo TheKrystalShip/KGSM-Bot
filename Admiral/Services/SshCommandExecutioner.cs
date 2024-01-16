@@ -52,6 +52,9 @@ namespace TheKrystalShip.Admiral.Services
             SshCommand commandExecution = _sshClient.RunCommand(argsCommand);
 
             /*
+            * _jesus christ..._
+            * Luckily all of this only exists for running it locally, prod doesn't see any of this code
+            *
             * Properties:
             *     - Result: (can be empty) string, not null
             *     - Error: (can be empty) string, not null
@@ -64,6 +67,12 @@ namespace TheKrystalShip.Admiral.Services
             return commandExecution switch
             {
                 // Success
+                // ExitStatus is 0 but Error contains something, treat as success
+                // systemctl enable/disable does this... ExitStatus 0 & the output is in Error instead of Result
+                { ExitStatus: var exitStatus, Error: var error }
+                    when (exitStatus == 0) && (error != string.Empty) => new Result(CommandStatus.Success, error),
+
+                // Success
                 // Result is empty, ExitStatus is 0, Error is empty, treat as success
                 { Result: var result, ExitStatus: var exitStatus, Error: var error }
                     when (result == string.Empty) && (exitStatus == 0) && (error == string.Empty) => new Result(),
@@ -73,18 +82,15 @@ namespace TheKrystalShip.Admiral.Services
                 { Result: var result, Error: var error }
                     when (result != string.Empty) && (error == string.Empty) => new Result(result),
 
-                // Fail
-                // ExitStatus is 0 but Error contains something, treat as fail
-                { ExitStatus: var exitStatus, Error: var error }
-                    when (exitStatus == 0) && (error != string.Empty) => new Result(CommandStatus.Error, error),
-
-                // No f-ing clue
-                // Result is not empty, ExitStatus is not 0 but Error is empty, treat as... fail, just to be sure
+                // Success?
+                // Result is empty, ExitStatus is 0 but Error has something
+                // This happens when using the `systemctl enable/disable` command, for some reason the output is in Error
+                //  instead of being in Result 🤦‍♂️
                 { Result: var result, ExitStatus: var exitStatus, Error: var error }
-                    when (result != string.Empty) && (exitStatus != 0) && (error == string.Empty) => new Result(CommandStatus.Error, result),
+                    when (result == string.Empty) && (exitStatus == 0) && (error != string.Empty) => new Result(CommandStatus.Success, error),
 
                 // Default to error
-                _ => new Result(CommandStatus.Error, commandExecution.Result)
+                _ => new Result(CommandStatus.Error, commandExecution.Error)
             };
         }
     }

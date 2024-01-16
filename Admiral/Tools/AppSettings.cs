@@ -10,8 +10,7 @@ namespace TheKrystalShip.Admiral.Tools
     public static class AppSettings
     {
         private static IConfigurationRoot _config;
-        public const string FILENAME = "appsettings.json";
-        public const string DEFAULT_FILENAME = "appsettings.example.json";
+        private const string FILENAME = "appsettings.json";
 
         static AppSettings()
         {

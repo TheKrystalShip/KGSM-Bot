@@ -38,14 +38,15 @@ namespace TheKrystalShip.Admiral.Services
             process.WaitForExit();
 
             int exitCode = process.ExitCode;
-            string output = process.StandardOutput.ReadToEnd();
+            string stdout = process.StandardOutput.ReadToEnd();
+            string stderr = process.StandardError.ReadToEnd();
 
-            if (exitCode is 0)
+            if (exitCode == 0 && stderr == string.Empty)
             {
-                return new Result(output);
+                return new Result(stdout);
             }
 
-            return new Result(CommandStatus.Error, output);
+            return new Result(CommandStatus.Error, stderr);
         }
     }
 }

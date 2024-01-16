@@ -9,6 +9,10 @@ namespace TheKrystalShip.Admiral.Services
         protected string STOP_SCRIPT = AppSettings.Get("scripts:stop");
         protected string RESTART_SCRIPT = AppSettings.Get("scripts:restart");
         protected string STATUS_SCRIPT = AppSettings.Get("scripts:status");
+        protected string IS_ACTIVE_SCRIPT = AppSettings.Get("scripts:is-active");
+        protected string IS_ENABLED_SCRIPT = AppSettings.Get("scripts:is-enabled");
+        protected string ENABLE_SCRIPT = AppSettings.Get("scripts:enable");
+        protected string DISABLE_SCRIPT = AppSettings.Get("scripts:disable");
 
         private readonly ICommandExecutioner _internal;
 
@@ -35,5 +39,17 @@ namespace TheKrystalShip.Admiral.Services
 
         public Result Status(string process)
             => _internal.Execute(STATUS_SCRIPT, [process]);
+
+        public Result IsActive(string process)
+            => _internal.Execute(IS_ACTIVE_SCRIPT, [process]);
+
+        public Result IsEnabled(string process)
+            => _internal.Execute(IS_ENABLED_SCRIPT, [process]);
+
+        public Result Enable(string process)
+            => _internal.Execute(ENABLE_SCRIPT, [process]);
+
+        public Result Disable(string process)
+            => _internal.Execute(DISABLE_SCRIPT, [process]);
     }
 }
