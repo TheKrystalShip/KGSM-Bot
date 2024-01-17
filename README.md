@@ -12,7 +12,9 @@ Service & socket files are located in `/etc/systemd/system`:
 ```
 /etc/systemd/system
 ├── 7dtd.service
+├── corekeeper.service
 ├── factorio.service
+├── minecraft.service
 ├── projectzomboid.service
 ├── projectzomboid.socket
 ├── starbound.service
@@ -30,23 +32,27 @@ Game server files are located under `/home/[USER]/servers`:
 /home/[USER]/servers
 ├── 7dtd
 │   ├── install
+│   │   └── latest
 │   ├── installed_version
 │   ├── start.sh
 │   ├── update.sh
 │   └── versionCheck.sh
 ├── corekeeper
 │   ├── install
+│   │   └── latest
 │   ├── installed_version
 │   ├── start.sh
 │   ├── update.sh
 │   └── versionCheck.sh
 ├── factorio
 │   ├── install
+│   │   └── latest
 │   ├── start.sh
 │   ├── update.sh
 │   └── versionCheck.sh
 ├── projectzomboid
 │   ├── install
+│   │   └── latest
 │   ├── installed_version
 │   ├── projectzomboid.stdin
 │   ├── start.sh
@@ -55,11 +61,13 @@ Game server files are located under `/home/[USER]/servers`:
 │   └── versionCheck.sh
 ├── starbound
 │   ├── install
+│   │   └── latest
 │   ├── start.sh
 │   ├── update.sh
 │   └── versionCheck.sh
 ├── terraria
 │   ├── install
+│   │   └── latest
 │   ├── installed_version
 │   ├── start.sh
 │   ├── stop.sh
@@ -68,6 +76,7 @@ Game server files are located under `/home/[USER]/servers`:
 │   └── versionCheck.sh
 └── valheim
     ├── install
+    │   └── latest
     ├── installed_version
     ├── start.sh
     ├── update.sh
@@ -86,7 +95,6 @@ All of this is handled by `systemctl` so there's no need to do anything from the
 
 These sockets (`*.stdin`) are automatically opened/closed alongside the service thanks to https://unix.stackexchange.com/a/730423
 
-- `versionCheck.sh` fetches the latest version from the source (Steam or other) and updates the `installed_version` file.
-DOES NOT YET UPDATE THE GAMES
+- `versionCheck.sh` fetches the latest version from the source (Steam or other). If a new version is found, it outputs it through stderr and will also give exit code 1.
 
 - `install` is the folder containing the game installation.
