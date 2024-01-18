@@ -18,8 +18,8 @@ NEW_VERSION='0'
 
 # If new version exists, echo it and exit 1
 if [ "$NEW_VERSION" != "$INSTALLED_VERSION" ]; then
-    echo >&2 "$NEW_VERSION"
-    exit 1
+  echo >&2 "$NEW_VERSION"
+  exit 1
 fi
 
 exit 0
