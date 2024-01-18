@@ -85,7 +85,7 @@ namespace TheKrystalShip.Admiral.Services
                 // Error contains the new version number IF ExitStatus is 1 and Result is empty
                 // IMPORTANT: Must return an CommandStatus.Error result, since technically ExitCode 1 is an error.
                 { Result: var result, ExitStatus: var exitStatus, Error: var error }
-                    when (exitStatus == 1) && (error != string.Empty) && (result == string.Empty) => new Result(CommandStatus.Error, result),
+                    when (exitStatus == 1) && (error != string.Empty) && (result == string.Empty) => new Result(CommandStatus.Error, error),
 
                 // Success?
                 // Result is empty, ExitStatus is 0 but Error has something
