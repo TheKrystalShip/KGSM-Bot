@@ -80,8 +80,8 @@ fi
 
 # If new version exists, echo it and exit 1
 if [ "$NEW_VERSION" != "$INSTALLED_VERSION" ]; then
-    # Output new version number to stderr
-    echo >&2 "$NEW_VERSION"
+    # Output new version to stderr, remove newline characters just in case
+    echo "$NEW_VERSION" | tr -d '\n' >&2
     exit 1
 fi
 
