@@ -26,6 +26,7 @@ namespace TheKrystalShip.Admiral.Services
                 FileName = command,
                 Arguments = string.Join(" ", args),
                 UseShellExecute = false,
+                RedirectStandardError = true,
                 RedirectStandardOutput = true,
                 CreateNoWindow = true
             };
@@ -42,7 +43,15 @@ namespace TheKrystalShip.Admiral.Services
 
             int exitCode = process.ExitCode;
             string stdout = process.StandardOutput.ReadToEnd();
-            string stderr = process.StandardError.ReadToEnd();
+            string stderr = string.Empty;
+
+            // Random intermittent error that StandardError has not been redirected
+            // when it clearly has...
+            try {
+                stderr = process.StandardError.ReadToEnd();
+            } catch (InvalidOperationException e) {
+                _logger.LogError(e);
+            }
 
             // Specific to the versionCheck script
             // exitCode will be 1, stderr will have the new version number and stdout will be empty
