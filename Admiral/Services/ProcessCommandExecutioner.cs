@@ -35,7 +35,7 @@ namespace TheKrystalShip.Admiral.Services
 
             if (process is null)
             {
-                _logger.LogError("Process failed to start");
+                _logger.LogError("Process is null");
                 return new Result(CommandStatus.Error, "Process failed to start");
             }
 
@@ -49,14 +49,9 @@ namespace TheKrystalShip.Admiral.Services
             // when it clearly has...
             try {
                 stderr = process.StandardError.ReadToEnd();
-            } catch (InvalidOperationException e) {
+            } catch (Exception e) {
                 _logger.LogError(e);
             }
-
-            // Specific to the versionCheck script
-            // exitCode will be 1, stderr will have the new version number and stdout will be empty
-            if ((exitCode == 1) && (stderr != string.Empty) && (stdout == string.Empty))
-                return new Result(stdout);
 
             // Exit code 0 and no error probably means success
             if (exitCode == 0 && stderr == string.Empty)
