@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Discord.WebSocket;
 using TheKrystalShip.Admiral.Domain;
 using TheKrystalShip.Admiral.Services;
@@ -6,7 +7,7 @@ using TheKrystalShip.Logging;
 
 namespace TheKrystalShip.Admiral
 {
-    public class SlashCommandHandler
+    public partial class SlashCommandHandler
     {
         private readonly Logger<SlashCommandHandler> _logger;
         private readonly CommandExecutioner _commandExecutioner;
@@ -18,6 +19,9 @@ namespace TheKrystalShip.Admiral
 
         public event Func<RunningStatusUpdatedArgs, Task>? RunningStatusUpdated;
 
+        [GeneratedRegex("[^a-zA-Z0-9_.]+", RegexOptions.Compiled)]
+        private static partial Regex ChannelRegex();
+
         public SlashCommandHandler()
         {
             _logger = new();
@@ -27,10 +31,17 @@ namespace TheKrystalShip.Admiral
         public async Task OnSlashCommandExecuted(SocketSlashCommand command)
         {
             // All commands require the user to specify a game.
-            string game = (string)(command.Data.Options?.First()?.Value ?? "");
+            // string game = (string)(command.Data.Options?.First()?.Value ?? "");
+            string game = string.Empty;
+
+            if ((command.Data.Options?.First()?.Value ?? "") is string val) {
+                game = val;
+            } else if ((command.Data.Options?.First()?.Value ?? "") is SocketTextChannel channel) {
+                game = ChannelRegex().Replace(channel.Name, "");
+            }
 
             // Received command
-            _logger.LogInformation("Discord", $">>> /{(command.Data.Name ?? "") + " " + game}");
+            _logger.LogInformation("SlashCommand", $">>> /{(command.Data.Name ?? "") + " " + game}");
 
             Result result = command.Data.Name switch
             {
