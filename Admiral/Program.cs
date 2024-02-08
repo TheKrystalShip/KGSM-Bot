@@ -28,7 +28,6 @@ namespace TheKrystalShip.Admiral
                         GatewayIntents.Guilds |
                         GatewayIntents.GuildMessages
             });
-
         }
 
         public async Task RunAsync(string[] args)
@@ -52,6 +51,12 @@ namespace TheKrystalShip.Admiral
             await Task.Delay(Timeout.Infinite);
         }
 
+        /// <summary>
+        /// Updates the matching discord channel for a given service/game to
+        /// reflect the new status provided
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
         private async Task OnRunningStatusUpdated(RunningStatusUpdatedArgs args)
         {
             string game = args.Game;
@@ -104,9 +109,10 @@ namespace TheKrystalShip.Admiral
             await _client.SetGameAsync("over servers 👀", null, ActivityType.Watching);
         }
 
-        // Doesn't need to run every time the bot starts up, just once is enough
-        // If commands needs changing, they all need to be de-registered firsts, then
-        // registered again.
+        /// <summary>
+        /// Only runs if program is started with <see cref="REGISTER_COMMANDS_ARG"/> param
+        /// </summary>
+        /// <returns></returns>
         private async Task OnRegisterSlashCommands()
         {
             // Commands are built for a specific guild, global commands require a lot higher

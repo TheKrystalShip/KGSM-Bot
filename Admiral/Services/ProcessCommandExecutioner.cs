@@ -42,7 +42,7 @@ namespace TheKrystalShip.Admiral.Services
             process.WaitForExit();
 
             int exitCode = process.ExitCode;
-            string stdout = process.StandardOutput.ReadToEnd();
+            string stdout = process.StandardOutput.ReadToEnd().Trim();
             string stderr = string.Empty;
 
             // Random intermittent error that StandardError has not been redirected

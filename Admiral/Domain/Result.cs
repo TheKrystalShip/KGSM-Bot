@@ -7,6 +7,9 @@ namespace TheKrystalShip.Admiral.Domain
         public CommandStatus Status { get; set; }
         public string Output { get; set; }
 
+        public bool IsSuccess { get => Status == CommandStatus.Success; }
+        public bool IsError { get => Status == CommandStatus.Error; }
+
         public Result() : this(CommandStatus.Success, string.Empty) {}
         public Result(CommandStatus status) : this(status, string.Empty) {}
         public Result(string output) : this(CommandStatus.Success, output) {}
@@ -19,7 +22,7 @@ namespace TheKrystalShip.Admiral.Domain
 
         public override string ToString()
         {
-            return $"{Status} - {Output.FirstCharToUpper()}";
+            return $"{Status} - {Output}";
         }
     }
 }
