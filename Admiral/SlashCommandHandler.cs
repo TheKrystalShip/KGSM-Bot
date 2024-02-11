@@ -21,8 +21,6 @@ namespace TheKrystalShip.Admiral
 
         private string WaitMessage { get => _waitVariants[_random.Next(_waitVariants.Length)]; }
 
-        public event Func<RunningStatusUpdatedArgs, Task>? RunningStatusUpdated;
-
         [GeneratedRegex("[^a-zA-Z0-9_.]+", RegexOptions.Compiled)]
         private static partial Regex ChannelNameRegex();
 
@@ -93,10 +91,7 @@ namespace TheKrystalShip.Admiral
 
             // CheckForUpdate returns CommandStatus.Error when there's an update
             if (result.IsError)
-            {
-                // RunningStatusUpdated?.Invoke(new(game, RunningStatus.NeedsUpdate));
                 followupText = $"New version found: {result.Output}";
-            }
 
             await command.FollowupAsync(followupText);
 
@@ -154,10 +149,7 @@ namespace TheKrystalShip.Admiral
             Result result = _commandExecutioner.Start(game.internalName);
 
             if (result.IsSuccess)
-            {
-                RunningStatusUpdated?.Invoke(new(game.internalName, RunningStatus.Online));
                 result.Output = $"Started {game}";
-            }
 
             return new Result(CommandStatus.Ignore, result.Output);
         }
@@ -169,10 +161,7 @@ namespace TheKrystalShip.Admiral
             Result result = _commandExecutioner.Stop(game.internalName);
 
             if (result.IsSuccess)
-            {
-                RunningStatusUpdated?.Invoke(new(game.internalName, RunningStatus.Offline));
                 result.Output = $"Stopped {game}";
-            }
 
             return new Result(CommandStatus.Ignore, result.Output);
         }

@@ -1,6 +1,6 @@
 ﻿using Discord;
 using Discord.WebSocket;
-using TheKrystalShip.Admiral.Domain;
+using TheKrystalShip.Admiral.Services;
 using TheKrystalShip.Admiral.Tools;
 using TheKrystalShip.Logging;
 
@@ -12,7 +12,9 @@ namespace TheKrystalShip.Admiral
 
         private readonly Logger<Program> _logger;
         private readonly SlashCommandHandler _commandHandler;
-        private readonly DiscordSocketClient _client;
+        private readonly DiscordSocketClient _discordClient;
+        private readonly DiscordNotifier _discordNotifier;
+        private readonly RabbitMQClient _rabbitMqClient;
 
         public static void Main(string[] args)
             => new Program().RunAsync(args).GetAwaiter().GetResult();
@@ -21,81 +23,38 @@ namespace TheKrystalShip.Admiral
         {
             _logger = new();
             _commandHandler = new();
-            _client = new(new DiscordSocketConfig()
+            _discordClient = new(new DiscordSocketConfig()
             {
                 // https://discord.com/developers/docs/topics/gateway#gateway-intents
                 GatewayIntents =
                         GatewayIntents.Guilds |
                         GatewayIntents.GuildMessages
             });
+
+            _discordNotifier = new(_discordClient);
+            _rabbitMqClient = new(_discordNotifier);
         }
 
         public async Task RunAsync(string[] args)
         {
-            _commandHandler.RunningStatusUpdated += OnRunningStatusUpdated;
-
-            _client.SlashCommandExecuted += _commandHandler.OnSlashCommandExecuted;
-            _client.Log += OnClientLog;
-            _client.Ready += OnClientReadyAsync;
+            _discordClient.SlashCommandExecuted += _commandHandler.OnSlashCommandExecuted;
+            _discordClient.Log += OnClientLog;
+            _discordClient.Ready += OnClientReadyAsync;
 
             // Register slash commands if program was launched with arg.
             if (args.Length > 0 && args[0] == REGISTER_COMMANDS_ARG)
             {
-                _client.Ready += OnRegisterSlashCommands;
+                _discordClient.Ready += OnRegisterSlashCommands;
             }
 
-            await _client.LoginAsync(TokenType.Bot, AppSettings.Get("discord:token"));
-            await _client.StartAsync();
+            await _discordClient.LoginAsync(TokenType.Bot, AppSettings.Get("discord:token"));
+            await _discordClient.StartAsync();
+
+            await _rabbitMqClient.LoginAsync(AppSettings.Get("rabbitmq:uri"));
+            await _rabbitMqClient.StartAsync(AppSettings.Get("rabbitmq:routing_key"));
 
             // Stop program from exiting
             await Task.Delay(Timeout.Infinite);
-        }
-
-        /// <summary>
-        /// Updates the matching discord channel for a given service/game to
-        /// reflect the new status provided
-        /// </summary>
-        /// <param name="args"></param>
-        /// <returns></returns>
-        private async Task OnRunningStatusUpdated(RunningStatusUpdatedArgs args)
-        {
-            string game = args.Game;
-            RunningStatus newStatus = args.RunningStatus;
-
-            string discordChannelId = AppSettings.Get($"games:{game}:channelId");
-
-            if (discordChannelId == string.Empty)
-            {
-                _logger.LogError($"Failed to get discordChannelId for game: {game}");
-                return;
-            }
-
-            string emote = AppSettings.Get($"discord:status:{newStatus}");
-
-            if (emote == string.Empty)
-            {
-                _logger.LogError($"Failed to get new status emote from settings file. New status: {newStatus}");
-                return;
-            }
-
-            if (_client.GetChannel(ulong.Parse(discordChannelId)) is not SocketGuildChannel discordChannel)
-            {
-                _logger.LogError($"Failed to get SocketGuildChannel with ID: {discordChannelId}");
-                return;
-            }
-
-            string newChannelStatusName = $"{emote}{game}";
-            _logger.LogInformation($"New status for {game}: {newStatus}");
-
-            try
-            {
-                // Could fail from discord rate limit, nothing we can do about it atm, so just log it and move on
-                await discordChannel.ModifyAsync((channel) => channel.Name = newChannelStatusName);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e);
-            }
         }
 
         private Task OnClientLog(LogMessage logMessage)
@@ -106,7 +65,7 @@ namespace TheKrystalShip.Admiral
 
         private async Task OnClientReadyAsync()
         {
-            await _client.SetGameAsync("over servers 👀", null, ActivityType.Watching);
+            await _discordClient.SetGameAsync("over servers 👀", null, ActivityType.Watching);
         }
 
         /// <summary>
@@ -125,7 +84,7 @@ namespace TheKrystalShip.Admiral
                 return;
             }
 
-            SocketGuild guild = _client.GetGuild(ulong.Parse(guildId));
+            SocketGuild guild = _discordClient.GetGuild(ulong.Parse(guildId));
 
             if (guild is null)
             {
