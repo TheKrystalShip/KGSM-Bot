@@ -1,9 +1,9 @@
 using TheKrystalShip.Admiral.Domain;
 using RabbitMQ.Client.Events;
 using TheKrystalShip.Logging;
-using System.Text.Json;
 using RabbitMQ.Client;
 using System.Text;
+using Newtonsoft.Json;
 
 namespace TheKrystalShip.Admiral.Services
 {
@@ -49,7 +49,7 @@ namespace TheKrystalShip.Admiral.Services
 
             string message = Encoding.UTF8.GetString(body);
 
-            ServiceStatusMessage? statusMessage = JsonSerializer.Deserialize<ServiceStatusMessage>(message);
+            ServiceStatusMessage? statusMessage = JsonConvert.DeserializeObject<ServiceStatusMessage>(message);
 
             if (statusMessage is null)
             {
