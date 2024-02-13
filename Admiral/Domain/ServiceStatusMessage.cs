@@ -1,9 +1,9 @@
 namespace TheKrystalShip.Admiral.Domain
 {
-    public record ServiceStatusMessage(string service, string status)
+    public record ServiceStatusMessage(string service, int status)
     {
-        private const string ACTIVE_STATUS = "active";
-        private const string INACTIVE_STATUS = "inactive";
+        private const int ACTIVE_STATUS = 1;
+        private const int INACTIVE_STATUS = 0;
 
         public bool IsOnline => status == ACTIVE_STATUS;
         public bool IsOffline => status == INACTIVE_STATUS;

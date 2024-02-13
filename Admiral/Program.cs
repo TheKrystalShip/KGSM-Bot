@@ -51,7 +51,7 @@ namespace TheKrystalShip.Admiral
             await _discordClient.StartAsync();
 
             await _rabbitMqClient.LoginAsync(AppSettings.Get("rabbitmq:uri"));
-            await _rabbitMqClient.StartAsync(AppSettings.Get("rabbitmq:routing_key"));
+            await _rabbitMqClient.StartAsync(AppSettings.Get("rabbitmq:routingKey"));
 
             // Stop program from exiting
             await Task.Delay(Timeout.Infinite);
