@@ -1,0 +1,46 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "SFTP Admiral",
+            "command": "sftp",
+            "type": "shell",
+            "args": [
+                "cristian@hotbox:/home/cristian/servers/discord/admiral/install",
+                "<<<",
+                "$'put Admiral/bin/Release/net8.0/linux-x64/publish/*'"
+            ]
+        },
+        {
+            "label": "SFTP scripts",
+            "command": "sftp",
+            "type": "shell",
+            "args": [
+                "cristian@hotbox:/home/cristian/servers",
+                "<<<",
+                "$'put -r home/cristian/servers/*'"
+            ]
+        },
+        {
+            "label": "DEPLOY Admiral",
+            "type": "shell",
+            "command": "ssh",
+            "args": [
+                "cristian@hotbox",
+                "-t",
+                "'systemctl restart admiral'"
+            ],
+            "dependsOn": "SFTP Admiral"
+        },
+        {
+            "label": "PUBLISH Admiral",
+            "type": "shell",
+            "command": "dotnet",
+            "args": [
+                "publish",
+                "-r",
+                "linux-x64"
+            ]
+        }
+    ]
+}
