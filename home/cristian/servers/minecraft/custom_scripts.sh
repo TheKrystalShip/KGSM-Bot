@@ -28,6 +28,7 @@
 # GLOBAL_VERSION_CHECK_FILE
 # SERVICE_LATEST_DIR
 # SERVICE_TEMP_DIR
+# SERVICE_BACKUPS_FOLDER
 ################################################################################
 
 custom_run_version_check() {

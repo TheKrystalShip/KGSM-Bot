@@ -86,6 +86,11 @@ if [ ! -d "$SERVICE_TEMP_DIR" ]; then
     mkdir -p "$SERVICE_TEMP_DIR"
 fi
 
+SERVICE_BACKUPS_FOLDER="$SERVICE_WORKING_DIR/install/backups"
+if [ ! -d "$SERVICE_BACKUPS_FOLDER" ]; then
+    mkdir -p "$SERVICE_BACKUPS_FOLDER"
+fi
+
 ################################################################################
 # > Functions
 ################################################################################
