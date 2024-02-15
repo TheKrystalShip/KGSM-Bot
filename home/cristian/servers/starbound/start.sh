@@ -1,6 +1,6 @@
 #!/bin/bash
 
-WORKING_DIR="/home/$USER/servers/starbound"
+WORKING_DIR="/home/$USER/servers/starbound/install/latest"
 
 # Move into directory because server uses pwd as a config
-(cd "$WORKING_DIR/install/linux" && exec ./starbound_server)
+(cd "$WORKING_DIR/linux" && exec ./starbound_server)

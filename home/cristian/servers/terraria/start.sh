@@ -1,5 +1,5 @@
 #!/bin/bash
 
-WORKING_DIR="/home/$USER/servers/terraria"
+WORKING_DIR="/home/$USER/servers/terraria/install/latest"
 
-exec "$WORKING_DIR/install/latest/Linux/TerrariaServer.bin.x86_64" -config "$WORKING_DIR/install/serverconfig.txt"
+exec "$WORKING_DIR/Linux/TerrariaServer.bin.x86_64" -config "$WORKING_DIR/serverconfig.txt"
