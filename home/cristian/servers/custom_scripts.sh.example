@@ -40,7 +40,7 @@ custom_run_version_check() {
     # - 1: New version found, written to STDERR
     ############################################################################
     local installed_version=$1
-    local new_version="0"
+    local new_version=$1
 
     # If new version exists, echo it and exit 1
     if [ "$new_version" != "$installed_version" ]; then
@@ -62,7 +62,7 @@ custom_run_download() {
     ############################################################################
     local new_version=$1
 
-    return 0
+    return 1
 }
 
 custom_run_deploy() {
@@ -78,5 +78,5 @@ custom_run_deploy() {
     local source=$1
     local destination=$2
 
-    return 0
+    return 1
 }

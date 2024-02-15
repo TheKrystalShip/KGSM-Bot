@@ -1,3 +1,5 @@
 #!/bin/bash
 
-exec /home/$USER/servers/valheim/install/start_server_bepinex.sh
+WORKING_DIR="/home/$USER/servers/valheim"
+
+exec "$WORKING_DIR/install/start_server_bepinex.sh"

@@ -40,23 +40,11 @@ custom_run_version_check() {
     # - 1: New version found, written to STDERR
     ############################################################################
     local installed_version=$1
-    local newest_version=0
-
-    # Fetch latest version
-    local newest_version_full_name=$(curl -s 'https://terraria.org/api/get/dedicated-servers-names' | python3 -c "import sys, json; print(json.load(sys.stdin)[0])")
-    # Expected: terraria-server-1449.zip
-    IFS='-' read -r -a new_version_unformatted <<<"$newest_version_full_name "
-    local temp=${new_version_unformatted[2]}
-    # Expected: 1449.zip
-
-    IFS='.' read -r -a version_number <<<"$temp"
-    newest_version=${version_number[0]}
-    # Expected: 1449
+    local new_version=$1
 
     # If new version exists, echo it and exit 1
-    if [ "$newest_version" != "$installed_version" ]; then
-        # Output new version number to stderr
-        echo "$newest_version" | tr -d '\n'
+    if [ "$new_version" != "$installed_version" ]; then
+        echo "$new_version"
         return 1
     fi
 
@@ -72,26 +60,12 @@ custom_run_download() {
     # - 0: Success
     # - 1: Error
     ############################################################################
-
     local new_version=$1
 
-    local wget_exit_code=$(exec wget "https://terraria.org/api/download/pc-dedicated-server/terraria-server-${new_version}.zip")
-    if [ "$wget_exit_code" -ne 0 ]; then
-        echo ">>> ERROR: wget https://terraria.org/api/download/pc-dedicated-server/terraria-server-${new_version}.zip command didn't finish with code 0, exiting"
-        return 1
-    fi
-
-    local unzip_exit_code=$(exec unzip "terraria-server-${new_version}.zip" -d "$SERVICE_TEMP_DIR")
-    if [ "$unzip_exit_code" -ne 0 ]; then
-        echo ">>> ERROR: unzip terraria-server-${new_version}.zip -d $SERVICE_TEMP_DIR command didn't finish with code 0, exiting"
-        return 1
-    fi
-
-    local rm_exit_code=$(exec rm "terraria-server-${new_version}.zip")
-    if [ "$rm_exit_code" -ne 0 ]; then
-        echo ">>> ERROR: 'rm terraria-server-${new_version}.zip' command didn't finish with code 0, exiting"
-        return 1
-    fi
+    # Downaload and unpack latest version of the stable headless server
+    wget https://factorio.com/get-download/stable/headless/linux64 -O "$SERVICE_TEMP_DIR/factorio_headless.tar.xz"
+    tar -xf "$SERVICE_TEMP_DIR/factorio_headless.tar.xz" --strip-components=1 -C "$SERVICE_TEMP_DIR"
+    rm factorio_headless.tar.xz
 
     return 0
 }

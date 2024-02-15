@@ -3,10 +3,10 @@
 MAX_HEAP_ALLOCATION="4096M"
 INITIAL_HEAP_ALLOCATION="$MAX_HEAP_ALLOCATION"
 
-INSTALL_DIR="/home/$USER/servers/minecraft/install"
+WORKING_DIR="/home/cristian/servers/minecraft/install"
 STARTUP_FILE="release.jar"
 
-(cd "$INSTALL_DIR" && exec java \
+(cd "$WORKING_DIR" && exec java \
   -Xmx"$MAX_HEAP_ALLOCATION" \
   -Xms"$INITIAL_HEAP_ALLOCATION" \
   -XX:+UseG1GC \

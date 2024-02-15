@@ -40,27 +40,25 @@ custom_run_version_check() {
     # - 1: New version found, written to STDERR
     ############################################################################
     local installed_version=$1
-    local newest_version=0
+    local new_version=$1
 
-    # Fetch latest version
-    local newest_version_full_name=$(curl -s 'https://terraria.org/api/get/dedicated-servers-names' | python3 -c "import sys, json; print(json.load(sys.stdin)[0])")
-    # Expected: terraria-server-1449.zip
-    IFS='-' read -r -a new_version_unformatted <<<"$newest_version_full_name "
-    local temp=${new_version_unformatted[2]}
-    # Expected: 1449.zip
+    local mc_versions_cache="$SERVICE_TEMP_DIR/version_cache.json"
 
-    IFS='.' read -r -a version_number <<<"$temp"
-    newest_version=${version_number[0]}
-    # Expected: 1449
+    # Fetch latest version manifest
+    curl -sS https://launchermeta.mojang.com/mc/game/version_manifest.json >"$mc_versions_cache"
 
-    # If new version exists, echo it and exit 1
-    if [ "$newest_version" != "$installed_version" ]; then
-        # Output new version number to stderr
-        echo "$newest_version" | tr -d '\n'
-        return 1
+    new_version=$(cat "$mc_versions_cache" | jq -r '{latest: .latest.release} | .[]')
+
+    # Cleanup
+    rm "$mc_versions_cache"
+
+    if [ "$installed_version" != "$new_version" ]; then
+        # Output new version to stdout
+        echo "$new_version"
+        exit 0
     fi
 
-    return 0
+    exit 1
 }
 
 custom_run_download() {
@@ -72,26 +70,27 @@ custom_run_download() {
     # - 0: Success
     # - 1: Error
     ############################################################################
-
     local new_version=$1
 
-    local wget_exit_code=$(exec wget "https://terraria.org/api/download/pc-dedicated-server/terraria-server-${new_version}.zip")
-    if [ "$wget_exit_code" -ne 0 ]; then
-        echo ">>> ERROR: wget https://terraria.org/api/download/pc-dedicated-server/terraria-server-${new_version}.zip command didn't finish with code 0, exiting"
-        return 1
-    fi
+    local mc_versions_cache="$SERVICE_TEMP_DIR/version_cache.json"
+    local release_json="$SERVICE_TEMP_DIR/_release.json"
 
-    local unzip_exit_code=$(exec unzip "terraria-server-${new_version}.zip" -d "$SERVICE_TEMP_DIR")
-    if [ "$unzip_exit_code" -ne 0 ]; then
-        echo ">>> ERROR: unzip terraria-server-${new_version}.zip -d $SERVICE_TEMP_DIR command didn't finish with code 0, exiting"
-        return 1
-    fi
+    # Pick URL
+    local release_url="$(cat "$mc_versions_cache" | jq -r "{versions: .versions} | .[] | .[] | select(.id == \"$new_version\") | {url: .url} | .[]")"
+    echo "Release URL: $release_url"
 
-    local rm_exit_code=$(exec rm "terraria-server-${new_version}.zip")
-    if [ "$rm_exit_code" -ne 0 ]; then
-        echo ">>> ERROR: 'rm terraria-server-${new_version}.zip' command didn't finish with code 0, exiting"
-        return 1
+    curl -sS "$release_url" >"$release_json"
+
+    local release_server_jar_url="$(cat "$release_json" | jq -r '{url: .downloads.server.url} | .[]')"
+
+    echo "Release .jar URL:  $release_server_jar_url"
+
+    local local_release_jar="$SERVICE_TEMP_DIR/minecraft_server.$new_version.jar"
+
+    if [ ! -f "$local_release_jar" ]; then
+        curl -sS "$release_server_jar_url" -o "$local_release_jar"
     fi
+    echo "Release .jar:  $local_release_jar"
 
     return 0
 }
