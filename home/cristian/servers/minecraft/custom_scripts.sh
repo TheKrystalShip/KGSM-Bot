@@ -18,18 +18,20 @@
 #
 # EXITSTATUS_SUCCESS
 # EXITSTATUS_ERROR
+# GLOBAL_SCRIPTS_DIR
+# GLOBAL_VERSION_CHECK_FILE
+# BASE_DIR
 # DB_FILE
+# IS_STEAM_GAME
 # SERVICE_NAME
 # SERVICE_WORKING_DIR
 # SERVICE_INSTALLED_VERSION
 # SERVICE_APP_ID
-# IS_STEAM_GAME
-# BASE_DIR
-# GLOBAL_SCRIPTS_DIR
-# GLOBAL_VERSION_CHECK_FILE
-# SERVICE_LATEST_DIR
+# SERVICE_INSTALL_DIR
 # SERVICE_TEMP_DIR
-# SERVICE_BACKUPS_FOLDER
+# SERVICE_BACKUPS_DIR
+# SERVICE_CONFIG_DIR
+# SERVICE_SAVES_DIR
 ################################################################################
 
 run_get_latest_version() {
@@ -89,10 +91,10 @@ run_download() {
 }
 
 run_deploy() {
-    # Deploy new version from $SERVICE_TEMP_DIR into $SERVICE_LATEST_DIR
+    # Deploy new version from $SERVICE_TEMP_DIR into $SERVICE_INSTALL_DIR
 
-    if ! mv -f "$SERVICE_TEMP_DIR"/*.jar "$SERVICE_LATEST_DIR"/release.jar; then
-        echo ">>> ERROR: cp -rf $SERVICE_TEMP_DIR/* $SERVICE_LATEST_DIR/"
+    if ! mv -f "$SERVICE_TEMP_DIR"/*.jar "$SERVICE_INSTALL_DIR"/release.jar; then
+        echo ">>> ERROR: cp -rf $SERVICE_TEMP_DIR/* $SERVICE_INSTALL_DIR/"
         return
     fi
 

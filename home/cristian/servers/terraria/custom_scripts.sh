@@ -18,18 +18,20 @@
 #
 # EXITSTATUS_SUCCESS
 # EXITSTATUS_ERROR
+# GLOBAL_SCRIPTS_DIR
+# GLOBAL_VERSION_CHECK_FILE
+# BASE_DIR
 # DB_FILE
+# IS_STEAM_GAME
 # SERVICE_NAME
 # SERVICE_WORKING_DIR
 # SERVICE_INSTALLED_VERSION
 # SERVICE_APP_ID
-# IS_STEAM_GAME
-# BASE_DIR
-# GLOBAL_SCRIPTS_DIR
-# GLOBAL_VERSION_CHECK_FILE
-# SERVICE_LATEST_DIR
+# SERVICE_INSTALL_DIR
 # SERVICE_TEMP_DIR
-# SERVICE_BACKUPS_FOLDER
+# SERVICE_BACKUPS_DIR
+# SERVICE_CONFIG_DIR
+# SERVICE_SAVES_DIR
 ################################################################################
 
 run_get_latest_version() {
@@ -86,4 +88,32 @@ run_download() {
     fi
 
     run_download_result="$EXITSTATUS_SUCCESS"
+}
+
+function run_deploy() {
+
+    # Terraria server comes in 3 subfolders for Windows, Mac & Linux
+    if ! mv -v "$SERVICE_TEMP_DIR"/Linux/* "$SERVICE_INSTALL_DIR"/; then
+        echo ">>> ERROR: mv -v $SERVICE_TEMP_DIR/Linux/* $SERVICE_INSTALL_DIR/"
+        return
+    fi
+
+    if ! chmod +x "$SERVICE_INSTALL_DIR"/TerrariaServer*; then
+        echo ">>> ERROR: chmod +x $SERVICE_INSTALL_DIR/TerrariaServer*"
+        return
+    fi
+
+    # Remove everything else left behind in $SERVICE_TEMP_DIR
+    if ! rm -rf "${SERVICE_TEMP_DIR:?}"/*; then
+        echo ">>> ERROR: rm -rf ${SERVICE_TEMP_DIR:?}/*"
+        return
+    fi
+
+    # Config file must be in the same dir as executable, copy it
+    if ! cp "$SERVICE_CONFIG_DIR"/* "$SERVICE_INSTALL_DIR"/; then
+        echo ">>> ERROR: cp $SERVICE_CONFIG_DIR/* $SERVICE_INSTALL_DIR/"
+        return
+    fi
+
+    run_deploy_result=$EXITSTATUS_SUCCESS
 }
