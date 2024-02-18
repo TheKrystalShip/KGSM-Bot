@@ -12,16 +12,6 @@
             ]
         },
         {
-            "label": "SFTP scripts",
-            "command": "sftp",
-            "type": "shell",
-            "args": [
-                "cristian@hotbox:/home/cristian/servers",
-                "<<<",
-                "$'put -r home/cristian/servers/*'"
-            ]
-        },
-        {
             "label": "DEPLOY Admiral",
             "type": "shell",
             "command": "ssh",
