@@ -70,14 +70,14 @@ namespace TheKrystalShip.Admiral.Services
             return commandExecution switch
             {
                 // Success
-                // Result is empty, ExitStatus is 0, Error is empty, treat as success
-                { Result: var result, ExitStatus: var exitStatus, Error: var error }
-                    when (result == string.Empty) && (exitStatus == 0) && (error == string.Empty) => new Result(),
-
-                // Success
                 // Result has something, ExitStatus is 0
                 { Result: var result, ExitStatus: var exitStatus }
                     when (result != string.Empty) && (exitStatus == 0 ) => new Result(result.Trim()),
+
+                // Success
+                // Result is empty, ExitStatus is 0, Error is empty, treat as success
+                { Result: var result, ExitStatus: var exitStatus, Error: var error }
+                    when (result == string.Empty) && (exitStatus == 0) && (error == string.Empty) => new Result(),
 
                 // Success?
                 // Result is empty, ExitStatus is 0 but Error has something

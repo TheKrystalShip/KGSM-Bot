@@ -89,9 +89,12 @@ namespace TheKrystalShip.Admiral
             // Default answer with no update before checking
             string followupText = $"No update found for {game}";
 
-            // CheckForUpdate returns CommandStatus.Error when there's an update
-            if (result.IsError)
+            // CheckForUpdate returns CommandStatus.Success when there's an update
+            if (result.IsSuccessWithOutput) {
                 followupText = $"New version found: {result.Output}";
+            } else if (result.IsSuccessWithNoOutput) {
+                followupText = $"Error: got empty response from steam, try again later";
+            }
 
             await command.FollowupAsync(followupText);
 
