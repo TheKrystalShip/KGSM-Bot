@@ -20,28 +20,36 @@
 #
 # DB table schema for reference
 #┌──┬────┬───────────┬─────────────────┬──────┐
-#│0 | 1  | 2         | 3               | 4    │
+#│0 |1   |2          |3                |4     │
 #├──┼────┼───────────┼─────────────────┼──────┤
 #|id|name|working_dir|installed_version|app_id|
 #└──┴────┴───────────┴─────────────────┴──────┘
 ################################################################################
 
-EXITSTATUS_SUCCESS=0
-EXITSTATUS_FAIL=1
+################################################################################
+# > Global vars
+################################################################################
+
+export EXITSTATUS_SUCCESS=0
+export EXITSTATUS_ERROR=1
+
+################################################################################
+# > Init checks
+################################################################################
 
 if [ -z "$USER" ]; then
     echo ">>> ERROR: \$USER var not set, cannot run script without it. Exiting"
-    exit "$EXITSTATUS_FAIL"
+    exit "$EXITSTATUS_ERROR"
 fi
 
 # Params
 if [ $# -eq 0 ]; then
     echo ">>> ERROR: Game name not supplied. Run script like this: ./${0##*/} \"GAME\""
-    exit "$EXITSTATUS_FAIL"
+    exit "$EXITSTATUS_ERROR"
 fi
 
 SERVICE_NAME=$1
-DB_FILE="/home/$USER/servers/info.db"
+export DB_FILE="/home/$USER/servers/info.db"
 
 # Select the entire row, each service only has one row so no need to check
 # for multiple rows being returned
@@ -49,7 +57,7 @@ result=$(sqlite3 "$DB_FILE" "SELECT * from services WHERE name = '${SERVICE_NAME
 
 if [ -z "$result" ]; then
     echo ">>> ERROR: Didn't get any result back from DB, exiting"
-    exit "$EXITSTATUS_FAIL"
+    exit "$EXITSTATUS_ERROR"
 fi
 
 # Result is a string with all values glued together by a | character, split
@@ -57,277 +65,279 @@ IFS='|' read -r -a COLS <<<"$result"
 
 if [ -z "${COLS[0]}" ]; then
     echo ">>> ERROR: Failed to parse result, exiting"
-    exit "$EXITSTATUS_FAIL"
+    exit "$EXITSTATUS_ERROR"
 fi
 
 ################################################################################
-# > Properties
+# > Service specific vars
 ################################################################################
 
-SERVICE_NAME="${COLS[1]}"
-SERVICE_WORKING_DIR="${COLS[2]}"
-SERVICE_INSTALLED_VERSION="${COLS[3]}"
-SERVICE_APP_ID="${COLS[4]}"
+export SERVICE_NAME="${COLS[1]}"
+export SERVICE_WORKING_DIR="${COLS[2]}"
+export SERVICE_INSTALLED_VERSION="${COLS[3]}"
+export SERVICE_APP_ID="${COLS[4]}"
 
 # 0 (false), 1 (true)
-IS_STEAM_GAME=$(
+# shellcheck disable=SC2155
+export IS_STEAM_GAME=$(
     ! [ "$SERVICE_APP_ID" != "0" ]
     echo $?
 )
 
-BASE_DIR="/home/$USER/servers"
-GLOBAL_SCRIPTS_DIR="$BASE_DIR/scripts"
-GLOBAL_VERSION_CHECK_FILE="$BASE_DIR/version_check.sh"
-SERVICE_LATEST_DIR="$SERVICE_WORKING_DIR/install/latest"
+export BASE_DIR="/home/$USER/servers"
+export GLOBAL_SCRIPTS_DIR="$BASE_DIR/scripts"
+export GLOBAL_VERSION_CHECK_FILE="$BASE_DIR/version_check.sh"
+export SERVICE_LATEST_DIR="$SERVICE_WORKING_DIR/install/latest"
 
 # Create temp folder if it doesn't exist
-SERVICE_TEMP_DIR="$SERVICE_WORKING_DIR/install/temp"
+export SERVICE_TEMP_DIR="$SERVICE_WORKING_DIR/install/temp"
 if [ ! -d "$SERVICE_TEMP_DIR" ]; then
     mkdir -p "$SERVICE_TEMP_DIR"
 fi
 
-SERVICE_BACKUPS_FOLDER="$SERVICE_WORKING_DIR/install/backups"
-if [ ! -d "$SERVICE_BACKUPS_FOLDER" ]; then
-    mkdir -p "$SERVICE_BACKUPS_FOLDER"
+export SERVICE_BACKUPS_DIR="$SERVICE_WORKING_DIR/install/backups"
+if [ ! -d "$SERVICE_BACKUPS_DIR" ]; then
+    mkdir -p "$SERVICE_BACKUPS_DIR"
 fi
+
+export SERVICE_CUSTOM_SCRIPTS_FILE="$SERVICE_WORKING_DIR/custom_scripts.sh"
+
+################################################################################
+# > Function return vars
+################################################################################
+
+export run_get_latest_version_result="$EXITSTATUS_ERROR"
+export run_download_result="$EXITSTATUS_ERROR"
+export run_get_service_status_result="inactive" # active / inactive
+export run_create_backup_result="$EXITSTATUS_ERROR"
+export run_deploy_result="$EXITSTATUS_ERROR"
+export run_restore_service_state_result="$EXITSTATUS_ERROR"
+export run_update_version_result="$EXITSTATUS_ERROR"
 
 ################################################################################
 # > Functions
 ################################################################################
-# Final
+
 function init() {
+
+    # shellcheck disable=SC1091
+    source "/etc/environment"
+
     echo "Update process started for $SERVICE_NAME."
+    sleep 1
 
-    # Check if the game is from steam or not, check for a custom_scripts.sh
-    # file and if it exists, source it
-    if [ "$IS_STEAM_GAME" -eq "$EXITSTATUS_SUCCESS" ]; then
-        # Dealing with a non-steam game, source the custom scripts
-        echo "INFO: Non-Steam game, importing custom scripts file"
-
-        local custom_scripts_file="$SERVICE_WORKING_DIR/custom_scripts.sh"
-
-        if ! test -f "$custom_scripts_file"; then
-            echo ">>> ERROR: Could not locate custom_scripts.sh file for $SERVICE_NAME, exiting."
-            exit "$EXITSTATUS_FAIL"
-        fi
-
-        # shellcheck source=/dev/null
-        source "$custom_scripts_file"
-    fi
+    ############################################################################
+    #### Check for new version
+    ############################################################################
 
     echo "1- Checking for new version..."
+    run_get_latest_version "$SERVICE_NAME"
 
-    # Check for new version number
-    local new_version_number=0
-    if type -t custom_run_version_check; then
-        echo "Running custom_run_version_check"
-        new_version_number=$(custom_run_version_check "$SERVICE_NAME")
-    else
-        new_version_number=$(run_version_check "$SERVICE_NAME")
+    if [ "$run_get_latest_version_result" -eq "$EXITSTATUS_ERROR" ]; then
+        printf "\t>>> ERROR: No new version found, exiting.\n"
+        exit "$EXITSTATUS_ERROR"
     fi
 
-    if [ "$new_version_number" -eq "$EXITSTATUS_FAIL" ]; then
-        echo ">>> ERROR: No new version found, exiting."
-        exit "$EXITSTATUS_FAIL"
-    fi
+    printf "\tNew version found: %s\n" "$run_get_latest_version_result"
+    sleep 1
 
-    echo "New version found: $new_version_number"
-    echo "2- Downloading $new_version_number..."
+    ############################################################################
+    #### Download new version
+    ############################################################################
 
     # Download new version in temp folder
-    local is_new_version_downloaded=1
-    if type -t custom_run_download; then
-        echo "Running custom_run_download"
-        is_new_version_downloaded=$(custom_run_download "$SERVICE_NAME")
-    else
-        is_new_version_downloaded=$(run_download "$SERVICE_NAME")
+    echo "2- Downloading version $run_get_latest_version_result..."
+
+    run_download "$run_get_latest_version_result"
+
+    if [ "$run_download_result" -eq "$EXITSTATUS_ERROR" ]; then
+        printf "\t>>> ERROR: Failed to download new version, exiting.\n"
+        exit "$EXITSTATUS_ERROR"
     fi
 
-    if [ "$is_new_version_downloaded" -eq "$EXITSTATUS_FAIL" ]; then
-        echo ">>> ERROR: Failed to download new version, exiting."
-        exit "$EXITSTATUS_FAIL"
-    fi
+    printf "\tDownload completed\n"
+    sleep 1
 
-    echo "Download finished"
+    ############################################################################
+    #### Check if service is currently running and shut it down if needed
+    ############################################################################
+
     echo "3- Checking service running status"
+    run_get_service_status "$SERVICE_NAME"
 
-    # Check if the service is running before doing anything further
-    local service_needs_restoring=false
+    if [ "$run_get_service_status_result" = "active" ]; then
+        printf "\tWARNING: Service currently running, shutting down first...\n"
 
-    local is_service_running=$(run_get_service_state "$PROCESS")
-    if [ "$is_service_running" = "active" ]; then
-        echo "WARNING: Service currently running, shutting down first..."
-        service_needs_restoring=true
-    fi
+        local service_shutdown_exit_code="$EXITSTATUS_ERROR"
+        service_shutdown_exit_code=$(exec "$GLOBAL_SCRIPTS_DIR/stop.sh" "$SERVICE_NAME")
 
-    echo "4- Creating backup of current version..."
-
-    # Backup exiting release
-    local backup_folder=$(run_create_backup_folder "$SERVICE_LATEST_DIR")
-    if [ "$backup_folder" -eq "$EXITSTATUS_FAIL" ]; then
-        echo ">>> ERROR: Failed to create backup, exiting."
-        exit "$EXITSTATUS_FAIL"
-    fi
-
-    echo "Backup complete in folder: $backup_folder"
-    echo "5- Deploying $new_version_number..."
-
-    # Deploy new version
-    local is_new_version_deployed=1
-    if type -t custom_run_deploy; then
-        echo "Running custom_run_deploy"
-        is_new_version_deployed=$(custom_run_deploy)
+        if [ "$service_shutdown_exit_code" -eq "$EXITSTATUS_ERROR" ]; then
+            printf "\t>>> ERROR: Failed to shutdown service, exiting\n"
+            exit "$EXITSTATUS_ERROR"
+        else
+            printf "\tService shutdown complete, continuing\n"
+        fi
     else
-        is_new_version_deployed=$(run_deploy)
+        printf "\tService status %s, continuing\n" "$run_get_service_status_result"
     fi
 
-    if [ "$is_new_version_deployed" -eq "$EXITSTATUS_FAIL" ]; then
-        echo ">>> ERROR: Failed to deploy ${new_version_number}, exiting."
-        exit "$EXITSTATUS_FAIL"
-    fi
+    sleep 1
 
-    echo "Deployment complete."
+    ############################################################################
+    #### Backup existing install if it exists
+    ############################################################################
 
-    # Restore previous service state
-    if [ "$service_needs_restoring" ]; then
-        echo "5.5- Starting the service back up"
+    if [ -z "$(ls -A "$SERVICE_LATEST_DIR")" ]; then
+        # Dir is empty
+        echo "4- No installation found, skipping backup step"
+    else
+        # Dir is not empty, backup exiting release
+        echo "4- Creating backup of current version..."
+        run_create_backup "$SERVICE_LATEST_DIR"
 
-        local restore_service_result=0
-        restore_service_result=$(run_restore_service_state "$PROCESS")
-        if [ "$restore_service_result" -eq "$EXITSTATUS_FAIL" ]; then
-            echo ">>> ERROR: Failed to restore service to running state, exiting."
-            exit "$EXITSTATUS_FAIL"
+        if [ "$run_create_backup_result" -eq "$EXITSTATUS_ERROR" ]; then
+            printf "\t>>> ERROR: Failed to create backup, exiting.\n"
+            exit "$EXITSTATUS_ERROR"
         fi
 
-        echo "Service started successfully"
+        printf "\tBackup complete in folder: %s\n" "$run_create_backup_result"
     fi
 
-    # Update version number
-    if [ "$(run_version_update "$new_version_number")" -eq "$EXITSTATUS_FAIL" ]; then
-        echo ">>> ERROR: Failed to update version number in DB"
+    sleep 1
+
+    ############################################################################
+    #### Deploy newly downloaded version
+    ############################################################################
+
+    echo "5- Deploying $run_get_latest_version_result..."
+
+    run_deploy
+
+    if [ "$run_deploy_result" -eq "$EXITSTATUS_ERROR" ]; then
+        printf "\t>>> ERROR: Failed to deploy %s, exiting.\n" "$run_get_latest_version_result"
+        exit "$EXITSTATUS_ERROR"
+    fi
+
+    printf "\tDeployment complete.\n"
+    sleep 1
+
+    ############################################################################
+    #### Restore service state if needed
+    ############################################################################
+
+    if [ "$run_get_service_status_result" = "active" ]; then
+        echo "5.5- Starting the service back up"
+
+        run_restore_service_state "$SERVICE_NAME"
+        if [ "$run_restore_service_state_result" -eq "$EXITSTATUS_ERROR" ]; then
+            printf "\t>>> ERROR: Failed to restore service to running state, exiting.\n"
+            exit "$EXITSTATUS_ERROR"
+        fi
+
+        printf "\tService started successfully\n"
+    fi
+
+    sleep 1
+
+    ############################################################################
+    #### Save the new installed version number
+    ############################################################################
+
+    run_update_version "$run_get_latest_version_result"
+
+    if [ "$run_update_version_result" -eq "$EXITSTATUS_ERROR" ]; then
+        printf "\t>>> ERROR: Failed to update version number in DB, however the update has been deployed\n"
     fi
 
     echo "6- Update finished, exiting"
     exit "$EXITSTATUS_SUCCESS"
 }
 
-# Overridable
-function run_version_check() {
-
+function run_get_latest_version() {
     local service=$1
-    local latest_version_available=1
+    local latest_version_available="$EXITSTATUS_ERROR"
 
     latest_version_available=$(exec "$GLOBAL_VERSION_CHECK_FILE" "$service")
 
-    # versionCheck returns exit code 1 if there's no new version.
-    if [ "$latest_version_available" -eq "$EXITSTATUS_FAIL" ]; then
-        return "$EXITSTATUS_FAIL"
+    # $EXITSTATUS_ERROR if there's no new version.
+    if [ "$latest_version_available" -eq "$EXITSTATUS_ERROR" ]; then
+        run_get_latest_version_result="$EXITSTATUS_ERROR"
+    else
+        # New version number will be saved
+        run_get_latest_version_result="$latest_version_available"
     fi
-
-    # New version number will be saved, echo it
-    echo "$latest_version_available"
 }
 
-# Overridable
+# function run_download() {
+#     local version=$1
+#     run_download_result="$EXITSTATUS_ERROR"
+
+#     steamcmd +@sSteamCmdForcePlatformType linux +force_install_dir "$SERVICE_TEMP_DIR" +login "$STEAM_USERNAME" "$STEAM_PASSWORD" +app_update "$SERVICE_APP_ID" -beta none validate +quit
+#     run_download_result=$?
+# }
+
+# Debugging, skip downloading
 function run_download() {
-    local new_version=$1
-
-    # Read from ENV
-    local user=$STEAM_USERNAME
-    local password=$STEAM_PASSWORD
-
-    local update_exit_code=1
-
-    update_exit_code=$(steamcmd +@sSteamCmdForcePlatformType linux +force_install_dir "$SERVICE_TEMP_DIR" +login "$user" "$password" +app_update "$SERVICE_APP_ID" -beta none validate +quit)
-    if [ "$update_exit_code" -ne "$EXITSTATUS_SUCCESS" ]; then
-        return "$EXITSTATUS_FAIL"
-    fi
-
-    return "$EXITSTATUS_SUCCESS"
+    run_download_result="$EXITSTATUS_SUCCESS"
 }
 
-# Final
-function run_get_service_state() {
-    # Default to "inactive" just to be sure it won't start up after updating
-    local service=$1
-    local service_state="inactive"
-
+function run_get_service_status() {
     # Possible output: "active" / "inactive"
-    service_state=$(exec "$GLOBAL_SCRIPTS_DIR/is-active.sh" "$service")
-
-    echo "$service_state"
+    run_get_service_status_result=$(exec "$GLOBAL_SCRIPTS_DIR/is-active.sh" "$SERVICE_NAME")
 }
 
-# Final
-function run_create_backup_folder() {
-
-    local service=$1
-    local source_dir=$SERVICE_LATEST_DIR
-    local installed_version=$SERVICE_INSTALLED_VERSION
-
-    # Create backup
-    local datetime=""
-    datetime=$(exec date +"%Y-%m-%d%T")
-    local destination_folder="${SERVICE_WORKING_DIR}/install/${installed_version}-backup.${datetime}"
+function run_create_backup() {
+    # shellcheck disable=SC2155
+    local datetime=$(exec date +"%Y-%m-%d%T")
+    local output_dir="${SERVICE_BACKUPS_DIR}/${SERVICE_NAME}-${SERVICE_INSTALLED_VERSION}-${datetime}.backup"
 
     # Create backup folder if it doesn't exit
-    if [ ! -d "$destination_folder" ]; then
-        mkdir -p "$destination_folder"
+    if [ ! -d "$output_dir" ]; then
+        if ! mkdir -p "$output_dir"; then
+            printf "\tERROR: Error creating backup folder %s" "$output_dir"
+            return
+        fi
     fi
 
-    # Move currently deployed version to backup folder
-    mv_command_exit_code=$(exec mv -f "$source_dir" "$destination_folder")
-
-    if [ "$mv_command_exit_code" -ne "$EXITSTATUS_SUCCESS" ]; then
-        return "$EXITSTATUS_FAIL"
+    if ! mv -v "$SERVICE_LATEST_DIR"/* "$output_dir"/; then
+        echo ">>> ERROR: Failed to move contents from $SERVICE_LATEST_DIR into $output_dir"
+        return
     fi
 
-    echo "$destination_folder"
-    return "$EXITSTATUS_SUCCESS"
+    run_create_backup_result="$output_dir"
 }
 
-# Overridable
 function run_deploy() {
     # Ensure 'latest' folder actually exists
     if [ ! -d "$SERVICE_LATEST_DIR" ]; then
         if ! mkdir -p "$SERVICE_LATEST_DIR"; then
             echo ">>> ERROR: Error creating $SERVICE_LATEST_DIR folder"
-            return "$EXITSTATUS_FAIL"
+            return
         fi
     fi
 
-    # Move newly downloaded version into "latest" folder
-    mv_deploy_version_exit_code=$(mv "$SERVICE_TEMP_DIR" "$SERVICE_LATEST_DIR")
-
-    return "$mv_deploy_version_exit_code"
-}
-
-# Final
-function run_restore_service_state() {
-    # Start up service
-    local service=$1
-    local service_start_exit_code=0
-
-    service_start_exit_code=$(exec "$GLOBAL_SCRIPTS_DIR/start.sh" "$service")
-
-    return "$service_start_exit_code"
-}
-
-# Final
-function run_version_update() {
-    # Save new version number in DB
-    local new_version=$1
-    local sql_script="UPDATE services \
-                      SET installed_version = '${new_version}' \
-                      WHERE name = '${SERVICE_NAME}';"
-
-    sql_execute_result=$(sqlite3 "$DB_FILE" "$sql_script")
-
-    if [ "$sql_execute_result" -ne "$EXITSTATUS_SUCCESS" ]; then
-        return "$EXITSTATUS_FAIL"
+    # Move everything from $SERVICE_TEMP_DIR into $SERVICE_LATEST_DIR
+    if ! mv -v "$SERVICE_TEMP_DIR"/* "$SERVICE_LATEST_DIR"/; then
+        echo ">>> ERROR: Failed to move contents from $SERVICE_TEMP_DIR into $SERVICE_LATEST_DIR"
+        return
     fi
 
-    return "$EXITSTATUS_SUCCESS"
+    run_deploy_result="$EXITSTATUS_SUCCESS"
+}
+
+function run_restore_service_state() {
+    run_restore_service_state_result=$(exec "$GLOBAL_SCRIPTS_DIR/start.sh" "$SERVICE_NAME")
+}
+
+function run_update_version() {
+    # Save new version number in DB
+    local version=$1
+    local sql_script="UPDATE services \
+                      SET installed_version = '${version}' \
+                      WHERE name = '${SERVICE_NAME}';"
+
+    sqlite3 "$DB_FILE" "$sql_script"
+    run_update_version_result=$?
 }
 
 function run_ctrl_c() {
@@ -337,6 +347,21 @@ function run_ctrl_c() {
 
 # Trap CTRL-C
 trap run_ctrl_c INT
+
+# Check if the game is from steam or not, check for a custom_scripts.sh
+# file and if it exists, source it
+if [ "$IS_STEAM_GAME" -eq "$EXITSTATUS_SUCCESS" ]; then
+    # Dealing with a non-steam game, source the custom scripts
+    printf "Non-Steam game detected, importing custom scripts file\n"
+
+    if ! test -f "$SERVICE_CUSTOM_SCRIPTS_FILE"; then
+        printf "\t>>> ERROR: Could not locate custom_scripts.sh file for %s, exiting.\n" "$SERVICE_NAME"
+        exit "$EXITSTATUS_ERROR"
+    fi
+
+    # shellcheck source=/dev/null
+    source "$SERVICE_CUSTOM_SCRIPTS_FILE"
+fi
 
 # Start the script
 init

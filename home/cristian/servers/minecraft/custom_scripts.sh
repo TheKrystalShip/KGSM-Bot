@@ -3,20 +3,21 @@
 ################################################################################
 # Main file: /home/$USER/servers/update.sh
 #
-# These are the functions available in the main script file.
-# The script will look for any of these functions that start with custom_
-# and run them instead of the original ones.
+# These are the functions available in the main script that can be overwritten.
+# Each function should write it's output to the corresponding var
 #
-# Example: custom_run_download, custom_run_create_backup_folder, etc.
+# run_get_latest_version        => run_get_latest_version_result
+# run_download                  => run_download_result
+# run_get_service_status        => run_get_service_status_result
+# run_create_backup             => run_create_backup_result
+# run_deploy                    => run_deploy_result
+# run_restore_service_state     => run_restore_service_state_result
+# run_update_version            => run_update_version_result
 #
-# Methods that can be "overwritten":
+# Available global vars:
 #
-# run_version_check
-# run_download
-# run_deploy
-#
-# Available vars:
-#
+# EXITSTATUS_SUCCESS
+# EXITSTATUS_ERROR
 # DB_FILE
 # SERVICE_NAME
 # SERVICE_WORKING_DIR
@@ -31,83 +32,70 @@
 # SERVICE_BACKUPS_FOLDER
 ################################################################################
 
-custom_run_version_check() {
-    ############################################################################
-    # INPUT:
-    # - $1: Installed version
-    #
-    # OUTPUT:
-    # - 0: No new version found
-    # - 1: New version found, written to STDERR
-    ############################################################################
-    local installed_version=$1
-    local new_version=$1
-
+run_get_latest_version() {
     local mc_versions_cache="$SERVICE_TEMP_DIR/version_cache.json"
 
     # Fetch latest version manifest
-    curl -sS https://launchermeta.mojang.com/mc/game/version_manifest.json >"$mc_versions_cache"
-
-    new_version=$(cat "$mc_versions_cache" | jq -r '{latest: .latest.release} | .[]')
-
-    # Cleanup
-    rm "$mc_versions_cache"
-
-    if [ "$installed_version" != "$new_version" ]; then
-        # Output new version to stdout
-        echo "$new_version"
-        exit 0
+    if ! curl -sS https://launchermeta.mojang.com/mc/game/version_manifest.json >"$mc_versions_cache"; then
+        echo ">>> ERROR: curl -sS https://launchermeta.mojang.com/mc/game/version_manifest.json >$mc_versions_cache"
+        return
     fi
 
-    exit 1
+    # shellcheck disable=SC2034
+    run_get_latest_version_result=$(cat "$mc_versions_cache" | jq -r '{latest: .latest.release} | .[]')
+
+    # Cleanup
+    if ! rm "$mc_versions_cache"; then
+        echo ">>> ERROR: rm $mc_versions_cache"
+        return
+    fi
 }
 
-custom_run_download() {
+run_download() {
     ############################################################################
     # INPUT:
-    # - $1: New version
-    #
-    # OUTPUT:
-    # - 0: Success
-    # - 1: Error
+    # - $1: Version
     ############################################################################
-    local new_version=$1
+    # Download new version in $SERVICE_TEMP_DIR
+    local version=$1
 
     local mc_versions_cache="$SERVICE_TEMP_DIR/version_cache.json"
     local release_json="$SERVICE_TEMP_DIR/_release.json"
 
     # Pick URL
-    local release_url="$(cat "$mc_versions_cache" | jq -r "{versions: .versions} | .[] | .[] | select(.id == \"$new_version\") | {url: .url} | .[]")"
-    echo "Release URL: $release_url"
+    # shellcheck disable=SC2155
+    local release_url="$(cat "$mc_versions_cache" | jq -r "{versions: .versions} | .[] | .[] | select(.id == \"$version\") | {url: .url} | .[]")"
+    # echo "Release URL: $release_url"
 
-    curl -sS "$release_url" >"$release_json"
+    if ! curl -sS "$release_url" >"$release_json"; then
+        echo ">>> ERROR: curl -sS $release_url >$release_json"
+        return
+    fi
 
+    # shellcheck disable=SC2155
     local release_server_jar_url="$(cat "$release_json" | jq -r '{url: .downloads.server.url} | .[]')"
 
-    echo "Release .jar URL:  $release_server_jar_url"
+    # echo "Release .jar URL:  $release_server_jar_url"
 
-    local local_release_jar="$SERVICE_TEMP_DIR/minecraft_server.$new_version.jar"
+    local local_release_jar="$SERVICE_TEMP_DIR/minecraft_server.$version.jar"
 
     if [ ! -f "$local_release_jar" ]; then
         curl -sS "$release_server_jar_url" -o "$local_release_jar"
     fi
-    echo "Release .jar:  $local_release_jar"
+    # echo "Release .jar:  $local_release_jar"
 
-    return 0
+    # shellcheck disable=SC2034
+    run_download_result="$EXITSTATUS_SUCCESS"
 }
 
-custom_run_deploy() {
-    ############################################################################
-    # INPUT:
-    # - $1: Source folder, absolute path
-    # - $2: Destination folder, absolute path
-    #
-    # OUTPUT:
-    # - 0: Success
-    # - 1: Error
-    ############################################################################
-    local source=$1
-    local destination=$2
+run_deploy() {
+    # Deploy new version from $SERVICE_TEMP_DIR into $SERVICE_LATEST_DIR
 
-    return 1
+    if ! mv -f "$SERVICE_TEMP_DIR"/*.jar "$SERVICE_LATEST_DIR"/release.jar; then
+        echo ">>> ERROR: cp -rf $SERVICE_TEMP_DIR/* $SERVICE_LATEST_DIR/"
+        return
+    fi
+
+    # shellcheck disable=SC2034
+    run_deploy_result="$EXITSTATUS_SUCCESS"
 }

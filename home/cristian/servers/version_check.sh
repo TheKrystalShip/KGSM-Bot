@@ -50,53 +50,60 @@ if [ -z "${COLS[0]}" ]; then
 fi
 
 # $COLS is now an array, all indexes match the DB schema described above.
-SERVICE_NAME="${COLS[1]}"
-SERVICE_WORKING_DIR="${COLS[2]}"
-SERVICE_INSTALLED_VERSION="${COLS[3]}"
-SERVICE_APP_ID="${COLS[4]}"
+export SERVICE_NAME="${COLS[1]}"
+export SERVICE_WORKING_DIR="${COLS[2]}"
+export SERVICE_INSTALLED_VERSION="${COLS[3]}"
+export SERVICE_APP_ID="${COLS[4]}"
 
 # 0 (false), 1 (true)
-IS_STEAM_GAME=$(
+# shellcheck disable=SC2155
+export IS_STEAM_GAME=$(
     ! [ "$SERVICE_APP_ID" != "0" ]
     echo $?
 )
 
-function init() {
-    local new_version_number="0"
+export EXITSTATUS_SUCCESS=0
+export EXITSTATUS_ERROR=1
+export run_get_latest_version_result="$EXITSTATUS_ERROR"
 
-    if [ "$IS_STEAM_GAME" -eq '1' ]; then
-        # It's a steam game, get the app_id and use steam to check for new version
-        echo "Running Steam version check..."
-        new_version_number=$(steamcmd +login anonymous +app_info_update 1 +app_info_print "$SERVICE_APP_ID" +quit | tr '\n' ' ' | grep --color=NEVER -Po '"branches"\s*{\s*"public"\s*{\s*"buildid"\s*"\K(\d*)')
-    else
-        # Non-steam game, will have custom way to check for new version, use that
-        echo "Running Custom version check..."
-        local custom_scripts_file="$SERVICE_WORKING_DIR/custom_scripts.sh"
-
-        if test -f "$custom_scripts_file"; then
-            # Custom file exists, source it
-
-            # shellcheck source=/dev/null
-            source "$custom_scripts_file"
-        else
-            echo "ERROR: No custom_scripts file found for $SERVICE_NAME, exiting"
-            exit 2
-        fi
-
-        if type -t custom_run_version_check; then
-            new_version_number=$(custom_run_version_check "$SERVICE_NAME")
-        else
-            echo "Error: No custom version check function found, exiting"
-            exit 2
-        fi
-    fi
-
-    if [ "$new_version_number" != "$SERVICE_INSTALLED_VERSION" ]; then
-        echo "$new_version_number" | tr -d '\n'
-        exit 0
-    fi
-
-    exit 1
+function run_steam_version_check() {
+    # It's a steam game, get the app_id and use steam to check for new version
+    # echo "Running Steam version check..."
+    run_get_latest_version_result=$(steamcmd +login anonymous +app_info_update 1 +app_info_print "$SERVICE_APP_ID" +quit | tr '\n' ' ' | grep --color=NEVER -Po '"branches"\s*{\s*"public"\s*{\s*"buildid"\s*"\K(\d*)')
 }
 
-init
+function run_custom_version_check() {
+    # Non-steam game, will have custom way to check for new version, use that
+    # echo "Running Custom version check..."
+    custom_scripts_file="$SERVICE_WORKING_DIR/custom_scripts.sh"
+
+    if ! test -f "$custom_scripts_file"; then
+        echo "ERROR: No custom_scripts file found for $SERVICE_NAME, exiting"
+        exit "$EXITSTATUS_ERROR"
+    fi
+
+    # Custom file exists, source it
+
+    # shellcheck source=/dev/null
+    source "$custom_scripts_file"
+
+    if ! type -t run_get_latest_version >/dev/null; then
+        echo "Error: No custom version check function found, exiting"
+        exit "$EXITSTATUS_ERROR"
+    fi
+
+    run_get_latest_version
+}
+
+if [ "$IS_STEAM_GAME" -eq '1' ]; then
+    run_steam_version_check
+else
+    run_custom_version_check
+fi
+
+if [ "$run_get_latest_version_result" != "$SERVICE_INSTALLED_VERSION" ]; then
+    echo "$run_get_latest_version_result" | tr -d '\n'
+    exit "$EXITSTATUS_SUCCESS"
+fi
+
+exit "$EXITSTATUS_ERROR"
