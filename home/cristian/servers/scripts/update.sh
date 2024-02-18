@@ -84,20 +84,38 @@ export IS_STEAM_GAME=$(
     echo $?
 )
 
-export BASE_DIR="/home/$USER/servers"
-export GLOBAL_SCRIPTS_DIR="$BASE_DIR/scripts"
-export GLOBAL_VERSION_CHECK_FILE="$BASE_DIR/version_check.sh"
-export SERVICE_LATEST_DIR="$SERVICE_WORKING_DIR/install/latest"
+export BASE_DIR=/home/"$USER"/servers
+export GLOBAL_SCRIPTS_DIR="$BASE_DIR"/scripts
+export GLOBAL_VERSION_CHECK_FILE="$BASE_DIR"/version_check.sh
 
-# Create temp folder if it doesn't exist
-export SERVICE_TEMP_DIR="$SERVICE_WORKING_DIR/install/temp"
+# Install dir
+export SERVICE_INSTALL_DIR="$SERVICE_WORKING_DIR"/install
+if [ ! -d "$SERVICE_INSTALL_DIR" ]; then
+    mkdir -p "$SERVICE_INSTALL_DIR"
+fi
+
+# Temp dir
+export SERVICE_TEMP_DIR="$SERVICE_WORKING_DIR"/temp
 if [ ! -d "$SERVICE_TEMP_DIR" ]; then
     mkdir -p "$SERVICE_TEMP_DIR"
 fi
 
-export SERVICE_BACKUPS_DIR="$SERVICE_WORKING_DIR/install/backups"
+# Backup dir
+export SERVICE_BACKUPS_DIR="$SERVICE_WORKING_DIR"/backups
 if [ ! -d "$SERVICE_BACKUPS_DIR" ]; then
     mkdir -p "$SERVICE_BACKUPS_DIR"
+fi
+
+# Config dir
+export SERVICE_CONFIG_DIR="$SERVICE_WORKING_DIR"/config
+if [ ! -d "$SERVICE_CONFIG_DIR" ]; then
+    mkdir -p "$SERVICE_CONFIG_DIR"
+fi
+
+# Saves dir
+export SERVICE_SAVES_DIR="$SERVICE_WORKING_DIR"/saves
+if [ ! -d "$SERVICE_SAVES_DIR" ]; then
+    mkdir -p "$SERVICE_SAVES_DIR"
 fi
 
 export SERVICE_CUSTOM_SCRIPTS_FILE="$SERVICE_WORKING_DIR/custom_scripts.sh"
@@ -187,13 +205,13 @@ function init() {
     #### Backup existing install if it exists
     ############################################################################
 
-    if [ -z "$(ls -A "$SERVICE_LATEST_DIR")" ]; then
+    if [ -z "$(ls -A "$SERVICE_INSTALL_DIR")" ]; then
         # Dir is empty
         echo "4- No installation found, skipping backup step"
     else
         # Dir is not empty, backup exiting release
         echo "4- Creating backup of current version..."
-        run_create_backup "$SERVICE_LATEST_DIR"
+        run_create_backup "$SERVICE_INSTALL_DIR"
 
         if [ "$run_create_backup_result" -eq "$EXITSTATUS_ERROR" ]; then
             printf "\t>>> ERROR: Failed to create backup, exiting.\n"
@@ -299,8 +317,8 @@ function run_create_backup() {
         fi
     fi
 
-    if ! mv -v "$SERVICE_LATEST_DIR"/* "$output_dir"/; then
-        echo ">>> ERROR: Failed to move contents from $SERVICE_LATEST_DIR into $output_dir"
+    if ! mv -v "$SERVICE_INSTALL_DIR"/* "$output_dir"/; then
+        echo ">>> ERROR: Failed to move contents from $SERVICE_INSTALL_DIR into $output_dir"
         return
     fi
 
@@ -309,16 +327,16 @@ function run_create_backup() {
 
 function run_deploy() {
     # Ensure 'latest' folder actually exists
-    if [ ! -d "$SERVICE_LATEST_DIR" ]; then
-        if ! mkdir -p "$SERVICE_LATEST_DIR"; then
-            echo ">>> ERROR: Error creating $SERVICE_LATEST_DIR folder"
+    if [ ! -d "$SERVICE_INSTALL_DIR" ]; then
+        if ! mkdir -p "$SERVICE_INSTALL_DIR"; then
+            echo ">>> ERROR: Error creating $SERVICE_INSTALL_DIR folder"
             return
         fi
     fi
 
-    # Move everything from $SERVICE_TEMP_DIR into $SERVICE_LATEST_DIR
-    if ! mv -v "$SERVICE_TEMP_DIR"/* "$SERVICE_LATEST_DIR"/; then
-        echo ">>> ERROR: Failed to move contents from $SERVICE_TEMP_DIR into $SERVICE_LATEST_DIR"
+    # Move everything from $SERVICE_TEMP_DIR into $SERVICE_INSTALL_DIR
+    if ! mv -v "$SERVICE_TEMP_DIR"/* "$SERVICE_INSTALL_DIR"/; then
+        echo ">>> ERROR: Failed to move contents from $SERVICE_TEMP_DIR into $SERVICE_INSTALL_DIR"
         return
     fi
 

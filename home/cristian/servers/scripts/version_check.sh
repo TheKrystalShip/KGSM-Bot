@@ -30,7 +30,10 @@ if [ $# -eq 0 ]; then
 fi
 
 SERVICE=$1
-DB_FILE="/home/$USER/servers/info.db"
+export DB_FILE="/home/$USER/servers/info.db"
+
+export EXITSTATUS_SUCCESS=0
+export EXITSTATUS_ERROR=1
 
 # Select the entire row, each service only has one row so no need to check
 # for multiple rows being returned
@@ -62,30 +65,30 @@ export IS_STEAM_GAME=$(
     echo $?
 )
 
-export EXITSTATUS_SUCCESS=0
-export EXITSTATUS_ERROR=1
+# Install dir
+export SERVICE_INSTALL_DIR="$SERVICE_WORKING_DIR"/install
+export SERVICE_TEMP_DIR="$SERVICE_WORKING_DIR"/temp
+export SERVICE_BACKUPS_DIR="$SERVICE_WORKING_DIR"/backups
+export SERVICE_CONFIG_DIR="$SERVICE_WORKING_DIR"/config
+export SERVICE_SAVES_DIR="$SERVICE_WORKING_DIR"/saves
+
+export SERVICE_CUSTOM_SCRIPTS_FILE="$SERVICE_WORKING_DIR/custom_scripts.sh"
+
 export run_get_latest_version_result="$EXITSTATUS_ERROR"
 
 function run_steam_version_check() {
-    # It's a steam game, get the app_id and use steam to check for new version
-    # echo "Running Steam version check..."
     run_get_latest_version_result=$(steamcmd +login anonymous +app_info_update 1 +app_info_print "$SERVICE_APP_ID" +quit | tr '\n' ' ' | grep --color=NEVER -Po '"branches"\s*{\s*"public"\s*{\s*"buildid"\s*"\K(\d*)')
 }
 
 function run_custom_version_check() {
-    # Non-steam game, will have custom way to check for new version, use that
-    # echo "Running Custom version check..."
-    custom_scripts_file="$SERVICE_WORKING_DIR/custom_scripts.sh"
-
-    if ! test -f "$custom_scripts_file"; then
+    if ! test -f "$SERVICE_CUSTOM_SCRIPTS_FILE"; then
         echo "ERROR: No custom_scripts file found for $SERVICE_NAME, exiting"
         exit "$EXITSTATUS_ERROR"
     fi
 
     # Custom file exists, source it
-
     # shellcheck source=/dev/null
-    source "$custom_scripts_file"
+    source "$SERVICE_CUSTOM_SCRIPTS_FILE"
 
     if ! type -t run_get_latest_version >/dev/null; then
         echo "Error: No custom version check function found, exiting"
