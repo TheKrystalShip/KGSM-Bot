@@ -78,6 +78,14 @@ namespace TheKrystalShip.Admiral.Tools
                 .Build()
             );
 
+            _commandList.Add(new SlashCommandBuilder()
+                .WithName(Command.GET_LOGS)
+                .WithDescription("Get the last 'n' lines of a game's log")
+                .AddOption("game", ApplicationCommandOptionType.Channel, "Game server name", isRequired: true)
+                .AddOption("lines", ApplicationCommandOptionType.Integer, "Number of lines", isRequired: false)
+                .Build()
+            );
+
             return _commandList;
         }
     }

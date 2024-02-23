@@ -13,5 +13,6 @@ namespace TheKrystalShip.Admiral.Domain
         public Result Enable(string process) => new();
         public Result Disable(string process) => new();
         public Result CheckForUpdate(string process) => new();
+        public Result GetLogs(string process, int? lines) => new();
     }
 }

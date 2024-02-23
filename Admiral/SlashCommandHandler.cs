@@ -56,6 +56,7 @@ namespace TheKrystalShip.Admiral
                 Command.STOP => await OnGameStopCommandAsync(command, game),
                 Command.RESTART => await OnGameRestartCommandAsync(command, game),
                 Command.CHECK_FOR_UPDATE => await OnGameCheckForUpdateCommandAsync(command, game),
+                Command.GET_LOGS => await OnGameGetLogAsync(command, game),
                 Command.STATUS => OnGameStatusCommand(game),
                 Command.SET_AUTOSTART => OnGameAutostartCommand(command, game),
                 Command.IS_ONLINE => OnGameIsActiveCommand(game),
@@ -79,6 +80,36 @@ namespace TheKrystalShip.Admiral
                 await command.RespondAsync(result.Output);
         }
 
+        private async Task<Result> OnGameGetLogAsync(SocketSlashCommand command, Game game)
+        {
+            await command.RespondAsync($"Fetching logs, {WaitMessage}");
+
+            int? lines = null;
+            if (command.Data.Options.Count > 1)
+            {
+                lines = Convert.ToInt32(command.Data.Options.ElementAt(1)?.Value);
+            }
+
+            Result result = _commandExecutioner.GetLogs(game.internalName, lines ?? 10);
+
+            string followupText = $"No logs found";
+            if (result.IsSuccessWithOutput)
+            {
+                followupText = result.Output;
+            }
+
+            Discord.EmbedBuilder embedBuilder = new Discord.EmbedBuilder()
+                .WithAuthor(command.User.ToString(), command.User.GetAvatarUrl() ?? command.User.GetDefaultAvatarUrl())
+                .WithTitle($"{game.displayName} logs, last {lines} lines:")
+                .WithDescription(followupText)
+                .WithColor(Discord.Color.Green)
+                .WithCurrentTimestamp();
+
+            await command.FollowupAsync(embed: embedBuilder.Build());
+
+            return new Result(CommandStatus.Ignore, "Responded with embed");
+        }
+
         private async Task<Result> OnGameCheckForUpdateCommandAsync(SocketSlashCommand command, Game game)
         {
             // Checking for update take a while, respond first then follow up once execution is finished
@@ -90,9 +121,12 @@ namespace TheKrystalShip.Admiral
             string followupText = $"No update found for {game}";
 
             // CheckForUpdate returns CommandStatus.Success when there's an update
-            if (result.IsSuccessWithOutput) {
+            if (result.IsSuccessWithOutput)
+            {
                 followupText = $"New version found: {result.Output}";
-            } else if (result.IsSuccessWithNoOutput) {
+            }
+            else if (result.IsSuccessWithNoOutput)
+            {
                 followupText = $"Error: got empty response from steam, try again later";
             }
 
