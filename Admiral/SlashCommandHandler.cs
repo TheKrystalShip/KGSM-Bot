@@ -84,13 +84,13 @@ namespace TheKrystalShip.Admiral
         {
             await command.RespondAsync($"Fetching logs, {WaitMessage}");
 
-            int? lines = null;
+            int lines = 10;
             if (command.Data.Options.Count > 1)
             {
                 lines = Convert.ToInt32(command.Data.Options.ElementAt(1)?.Value);
             }
 
-            Result result = _commandExecutioner.GetLogs(game.internalName, lines ?? 10);
+            Result result = _commandExecutioner.GetLogs(game.internalName, lines);
 
             string followupText = $"No logs found";
             if (result.IsSuccessWithOutput)
