@@ -9,7 +9,8 @@
                 "cristian@hotbox:/home/cristian/servers/discord/admiral/install",
                 "<<<",
                 "$'put Admiral/bin/Release/net8.0/linux-x64/publish/*'"
-            ]
+            ],
+            "dependsOn": "PUBLISH Admiral"
         },
         {
             "label": "DEPLOY Admiral",
