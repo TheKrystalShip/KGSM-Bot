@@ -50,8 +50,11 @@ namespace TheKrystalShip.Admiral
             await _discordClient.LoginAsync(TokenType.Bot, AppSettings.Get("discord:token"));
             await _discordClient.StartAsync();
 
-            await _rabbitMqClient.LoginAsync(AppSettings.Get("rabbitmq:uri"));
-            await _rabbitMqClient.StartAsync(AppSettings.Get("rabbitmq:routingKey"));
+            if (await _rabbitMqClient.LoginAsync(AppSettings.Get("rabbitmq:uri"))) {
+                await _rabbitMqClient.StartAsync(AppSettings.Get("rabbitmq:routingKey"));
+            } else {
+                _logger.LogError("Failed to start RabbitMQ consumer");
+            }
 
             // Stop program from exiting
             await Task.Delay(Timeout.Infinite);
