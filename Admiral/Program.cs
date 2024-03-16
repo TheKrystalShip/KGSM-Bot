@@ -1,4 +1,5 @@
-﻿using Discord;
+﻿using System.Text;
+using Discord;
 using Discord.WebSocket;
 using TheKrystalShip.Admiral.Services;
 using TheKrystalShip.Admiral.Tools;
@@ -8,16 +9,38 @@ namespace TheKrystalShip.Admiral
 {
     public class Program
     {
-        const string REGISTER_COMMANDS_ARG = "--register-commands";
+        private static bool _useRegisterCommands = false;
+        private static bool _useRabbitMq = false;
 
         private readonly Logger<Program> _logger;
         private readonly SlashCommandHandler _commandHandler;
         private readonly DiscordSocketClient _discordClient;
         private readonly DiscordNotifier _discordNotifier;
-        private readonly RabbitMQClient _rabbitMqClient;
+        private readonly RabbitMQClient? _rabbitMqClient;
 
         public static void Main(string[] args)
-            => new Program().RunAsync(args).GetAwaiter().GetResult();
+        {
+            foreach (string item in args)
+            {
+                switch (item)
+                {
+                    case "-h":
+                    case "--help":
+                        PrintHelp();
+                        return;
+                    case "--register-commands":
+                        _useRegisterCommands = true;
+                        break;
+                    case "--rabbitmq":
+                        _useRabbitMq = true;
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            new Program().RunAsync().GetAwaiter().GetResult();
+        }
 
         public Program()
         {
@@ -32,28 +55,39 @@ namespace TheKrystalShip.Admiral
             });
 
             _discordNotifier = new(_discordClient);
-            _rabbitMqClient = new(_discordNotifier);
+
+            if (_useRabbitMq)
+            {
+                _logger.LogInformation("Using RabbitMQ");
+                _rabbitMqClient = new(_discordNotifier);
+            }
         }
 
-        public async Task RunAsync(string[] args)
+        public async Task RunAsync()
         {
             _discordClient.SlashCommandExecuted += _commandHandler.OnSlashCommandExecuted;
             _discordClient.Log += OnClientLog;
             _discordClient.Ready += OnClientReadyAsync;
 
-            // Register slash commands if program was launched with arg.
-            if (args.Length > 0 && args[0] == REGISTER_COMMANDS_ARG)
+            if (_useRegisterCommands)
             {
+                _logger.LogInformation("Registering commands to Discord");
                 _discordClient.Ready += OnRegisterSlashCommands;
             }
 
             await _discordClient.LoginAsync(TokenType.Bot, AppSettings.Get("discord:token"));
             await _discordClient.StartAsync();
 
-            if (await _rabbitMqClient.LoginAsync(AppSettings.Get("rabbitmq:uri"))) {
-                await _rabbitMqClient.StartAsync(AppSettings.Get("rabbitmq:routingKey"));
-            } else {
-                _logger.LogError("Failed to start RabbitMQ consumer");
+            if (_useRabbitMq && _rabbitMqClient != null)
+            {
+                if (await _rabbitMqClient.LoginAsync(AppSettings.Get("rabbitmq:uri")))
+                {
+                    await _rabbitMqClient.StartAsync(AppSettings.Get("rabbitmq:routingKey"));
+                }
+                else
+                {
+                    _logger.LogError("Failed to start RabbitMQ consumer");
+                }
             }
 
             // Stop program from exiting
@@ -106,6 +140,23 @@ namespace TheKrystalShip.Admiral
             {
                 _logger.LogError(e);
             }
+        }
+
+        private static void PrintHelp()
+        {
+            StringBuilder b = new StringBuilder()
+                .AppendLine("Available parameters:")
+                .AppendLine("-h | --help")
+                .AppendLine("\tPrints this message")
+                .AppendLine()
+                .AppendLine("--register-commands")
+                .AppendLine("\tOverrides bot command list in guild specified in appsettings.json 'settings:discord:guildId'")
+                .AppendLine()
+                .AppendLine("--rabbitmq")
+                .AppendLine("\tEnable connection to RabbitMQ for event consumer")
+                .AppendLine("\tMake sure the 'settings:rabbitmq' section exists in your appsettings.json. See appsettings.example.json");
+
+            Console.WriteLine(b);
         }
     }
 }
