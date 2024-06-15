@@ -61,7 +61,7 @@ namespace TheKrystalShip.Admiral
                 Command.SET_AUTOSTART => OnGameAutostartCommand(command, game),
                 Command.IS_ONLINE => OnGameIsActiveCommand(game),
                 Command.IS_AUTOSTART_ENABLED => OnGameIsEnabledCommand(game),
-                Command.GET_IP => OnGameGetIPCommandAsync(command),
+                Command.GET_IP => OnGetIPCommand(command),
 
                 // Default
                 _ => new Result(CommandStatus.Error, "Command not found")
@@ -81,11 +81,9 @@ namespace TheKrystalShip.Admiral
                 await command.RespondAsync(result.Output);
         }
 
-        private Result OnGameGetIPCommandAsync(SocketSlashCommand command)
+        private Result OnGetIPCommand(SocketSlashCommand command)
         {
-            Result result = _commandExecutioner.GetIp();
-
-            return new Result(CommandStatus.Success, "Server IP: " + result.Output);
+            return _commandExecutioner.GetIp();
         }
 
         private async Task<Result> OnGameGetLogAsync(SocketSlashCommand command, Game game)
