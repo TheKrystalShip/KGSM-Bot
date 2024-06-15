@@ -14,5 +14,6 @@ namespace TheKrystalShip.Admiral.Domain
         public const string IS_ONLINE = "is-online";
         public const string CHECK_FOR_UPDATE = "check-for-update";
         public const string GET_LOGS = "get-logs";
+        public const string GET_IP = "get-ip";
     }
 }

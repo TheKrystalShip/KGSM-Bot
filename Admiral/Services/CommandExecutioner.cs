@@ -14,6 +14,7 @@ namespace TheKrystalShip.Admiral.Services
         protected string ENABLE_SCRIPT = AppSettings.Get("scripts:enable");
         protected string DISABLE_SCRIPT = AppSettings.Get("scripts:disable");
         protected string GET_LOGS_SCRIPT = AppSettings.Get("scripts:get-logs");
+        protected string GET_IP_SCRIPT = AppSettings.Get("scripts:get-ip");
 
         private readonly ICommandExecutioner _internal;
 
@@ -55,6 +56,9 @@ namespace TheKrystalShip.Admiral.Services
 
         public Result GetLogs(string process, int? lines)
             => _internal.Execute(GET_LOGS_SCRIPT, [process, lines?.ToString() ?? string.Empty]);
+
+        public Result GetIp()
+            => _internal.Execute(GET_IP_SCRIPT);
 
         public Result CheckForUpdate(string process)
         {

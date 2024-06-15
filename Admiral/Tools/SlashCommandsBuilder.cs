@@ -86,6 +86,12 @@ namespace TheKrystalShip.Admiral.Tools
                 .Build()
             );
 
+            _commandList.Add(new SlashCommandBuilder()
+                .WithName(Command.GET_IP)
+                .WithDescription("Get the server's IP address")
+                .Build()
+            );
+
             return _commandList;
         }
     }
