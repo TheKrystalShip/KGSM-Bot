@@ -36,7 +36,7 @@ namespace TheKrystalShip.Admiral
             // All commands require the user to specify a game.
             string serviceName = string.Empty;
 
-            if ((command.Data.Options?.First()?.Value) is SocketTextChannel channel)
+            if ((command.Data.Options?.FirstOrDefault()?.Value) is SocketTextChannel channel)
             {
                 serviceName = ChannelNameRegex().Replace(channel.Name, string.Empty);
             }
