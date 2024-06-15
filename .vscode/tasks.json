@@ -6,6 +6,7 @@
             "command": "sftp",
             "type": "shell",
             "args": [
+                "-r",
                 "cristian@hotbox:/opt/discord/admiral/install",
                 "<<<",
                 "$'put Admiral/bin/Release/net8.0/linux-x64/publish/*'"

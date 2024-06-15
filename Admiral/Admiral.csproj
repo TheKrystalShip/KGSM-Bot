@@ -7,11 +7,6 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-    <PublishSingleFile>true</PublishSingleFile>
-    <SelfContained>true</SelfContained>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="RabbitMQ.Client" Version="6.8.1" />
@@ -28,6 +23,14 @@
     <Content Include="appsettings.example.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="Scripts\**">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+  </PropertyGroup>
 
 </Project>
