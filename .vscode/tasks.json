@@ -33,6 +33,16 @@
                 "-r",
                 "linux-x64"
             ]
+        },
+        {
+            "type": "dotnet",
+            "task": "build",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [],
+            "label": "dotnet: build"
         }
     ]
 }

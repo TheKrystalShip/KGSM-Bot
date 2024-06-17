@@ -9,10 +9,10 @@ namespace TheKrystalShip.Admiral.Domain
         public Result Restart(string process) => new();
         public Result Status(string process) => new();
         public Result IsActive(string process) => new();
-        public Result IsEnabled(string process) => new();
         public Result Enable(string process) => new();
         public Result Disable(string process) => new();
         public Result CheckForUpdate(string process) => new();
-        public Result GetLogs(string process, int? lines) => new();
+        public Result GetLogs(string process) => new();
+        public Result GetIp() => new();
     }
 }

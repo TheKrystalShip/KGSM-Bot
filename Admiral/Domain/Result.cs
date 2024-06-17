@@ -1,5 +1,3 @@
-using TheKrystalShip.Admiral.Tools;
-
 namespace TheKrystalShip.Admiral.Domain
 {
     public class Result
