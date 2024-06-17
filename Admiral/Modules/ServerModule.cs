@@ -88,7 +88,7 @@ public partial class ServerModule : InteractionModuleBase<SocketInteractionConte
             {
                 "active" => "online",
                 "inactive" => "offline",
-                _ => input
+                _ => "offline"
             };
 
         Result result = _executioner.IsActive(game.internalName);
