@@ -4,9 +4,7 @@ using Discord.WebSocket;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System.Diagnostics;
-using System.Globalization;
-using System.Reflection;
+
 using TheKrystalShip.Admiral.Domain;
 using TheKrystalShip.Admiral.Services;
 using TheKrystalShip.Logging;
@@ -62,6 +60,7 @@ public class Program
             .AddSingleton<ProcessCommandExecutioner>()
 #endif
             .AddSingleton<ICommandExecutioner, CommandExecutioner>()
+            .AddSingleton<GameTypeConverter>()
             .AddSingleton<DiscordNotifier>();
 
         if (_useRabbitMq)

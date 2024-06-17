@@ -8,8 +8,6 @@ using Game = TheKrystalShip.Admiral.Domain.Game;
 
 using TheKrystalShip.Logging;
 
-using System.Text.RegularExpressions;
-
 namespace TheKrystalShip.Admiral.Modules;
 
 // Interaction modules must be public and inherit from an IInteractionModuleBase
@@ -20,9 +18,6 @@ public partial class ServerModule : InteractionModuleBase<SocketInteractionConte
     private readonly IConfiguration _configuration;
 
     private readonly Logger<ServerModule> _logger;
-
-    [GeneratedRegex("[^a-zA-Z0-9_.]+", RegexOptions.Compiled)]
-    private static partial Regex ChannelNameRegex();
 
     // Constructor injection is also a valid way to access the dependencies
     public ServerModule(
@@ -37,32 +32,13 @@ public partial class ServerModule : InteractionModuleBase<SocketInteractionConte
         _logger = new();
     }
 
-    // You can use a number of parameter types in you Slash Command handlers
-    // (string, int, double, bool, IUser, IChannel, IMentionable, IRole, Enums)
-    // by default.
-    // Optionally, you can implement your own TypeConverters to support a wider
-    // range of parameter types. For more information, refer to the library
-    // documentation.
-    //
-    // Optional method parameters(parameters with a default value) also will be
-    // displayed as optional on Discord.
-
     [SlashCommand("start", "Start up a game server")]
     public async Task StartAsync(
         [Summary(description: "Text channel of the game server")]
         [ChannelTypes(ChannelType.Text)]
-        IChannel channel
+        Game game
     )
     {
-        string serviceName = ChannelNameRegex()
-            .Replace(channel.Name, string.Empty);
-
-        Game game = new(
-            internalName: serviceName,
-            displayName: _configuration[$"games:{serviceName}:displayName"] ?? string.Empty,
-            channelId: _configuration[$"games:{serviceName}:channelId"] ?? string.Empty
-        );
-
         await RespondAsync($"Starting {game}...");
         _executioner.Start(game.internalName);
     }
@@ -71,18 +47,9 @@ public partial class ServerModule : InteractionModuleBase<SocketInteractionConte
     public async Task StopAsync(
         [Summary(description: "Text channel of the game server")]
         [ChannelTypes(ChannelType.Text)]
-        IChannel channel
+        Game game
     )
     {
-        string serviceName = ChannelNameRegex()
-            .Replace(channel.Name, string.Empty);
-
-        Game game = new(
-            internalName: serviceName,
-            displayName: _configuration[$"games:{serviceName}:displayName"] ?? string.Empty,
-            channelId: _configuration[$"games:{serviceName}:channelId"] ?? string.Empty
-        );
-
         await RespondAsync($"Stopping {game}...");
         _executioner.Stop(game.internalName);
     }
@@ -91,18 +58,9 @@ public partial class ServerModule : InteractionModuleBase<SocketInteractionConte
     public async Task RestartAsync(
         [Summary(description: "Text channel of the game server")]
         [ChannelTypes(ChannelType.Text)]
-        IChannel channel
+        Game game
     )
     {
-        string serviceName = ChannelNameRegex()
-            .Replace(channel.Name, string.Empty);
-
-        Game game = new(
-            internalName: serviceName,
-            displayName: _configuration[$"games:{serviceName}:displayName"] ?? string.Empty,
-            channelId: _configuration[$"games:{serviceName}:channelId"] ?? string.Empty
-        );
-
         await RespondAsync($"Restarting {game}...");
         _executioner.Restart(game.internalName);
     }
@@ -111,18 +69,9 @@ public partial class ServerModule : InteractionModuleBase<SocketInteractionConte
     public async Task StatusAsync(
         [Summary(description: "Text channel of the game server")]
         [ChannelTypes(ChannelType.Text)]
-        IChannel channel
+        Game game
     )
     {
-        string serviceName = ChannelNameRegex()
-            .Replace(channel.Name, string.Empty);
-
-        Game game = new(
-            internalName: serviceName,
-            displayName: _configuration[$"games:{serviceName}:displayName"] ?? string.Empty,
-            channelId: _configuration[$"games:{serviceName}:channelId"] ?? string.Empty
-        );
-
         Result result = _executioner.Status(game.internalName);
         await RespondAsync(result.Output);
     }
@@ -131,18 +80,9 @@ public partial class ServerModule : InteractionModuleBase<SocketInteractionConte
     public async Task IsActiveAsync(
         [Summary(description: "Text channel of the game server")]
         [ChannelTypes(ChannelType.Text)]
-        IChannel channel
+        Game game
     )
     {
-        string serviceName = ChannelNameRegex()
-            .Replace(channel.Name, string.Empty);
-
-        Game game = new(
-            internalName: serviceName,
-            displayName: _configuration[$"games:{serviceName}:displayName"] ?? string.Empty,
-            channelId: _configuration[$"games:{serviceName}:channelId"] ?? string.Empty
-        );
-
         static string GetSynonym(string input) =>
             input switch
             {
@@ -151,29 +91,20 @@ public partial class ServerModule : InteractionModuleBase<SocketInteractionConte
                 _ => input
             };
 
-        var isActiveResult = _executioner.IsActive(game.internalName);
-        string result = $"{game} is {GetSynonym(isActiveResult.Output)}";
+        Result result = _executioner.IsActive(game.internalName);
+        result.Output = $"{game} is {GetSynonym(result.Output)}";
 
-        await RespondAsync(result);
+        await RespondAsync(result.Output);
     }
 
     [SlashCommand("get-logs", "Get the last 10 lines a game server log")]
     public async Task GetLogsAsync(
         [Summary(description: "Text channel of the game server")]
         [ChannelTypes(ChannelType.Text)]
-        IChannel channel
+        Game game
     )
     {
         await RespondAsync($"Fetching logs...");
-
-        string serviceName = ChannelNameRegex()
-            .Replace(channel.Name, string.Empty);
-
-        Game game = new(
-            internalName: serviceName,
-            displayName: _configuration[$"games:{serviceName}:displayName"] ?? string.Empty,
-            channelId: _configuration[$"games:{serviceName}:channelId"] ?? string.Empty
-        );
 
         Result result = _executioner.GetLogs(game.internalName);
 
@@ -196,7 +127,7 @@ public partial class ServerModule : InteractionModuleBase<SocketInteractionConte
     [SlashCommand("get-ip", "Get the server's IP address")]
     public async Task GetIPAsync()
     {
-        var result = _executioner.GetIp();
+        Result result = _executioner.GetIp();
         await RespondAsync(result.Output);
     }
 }

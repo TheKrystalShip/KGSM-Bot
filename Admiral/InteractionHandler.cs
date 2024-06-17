@@ -3,6 +3,7 @@ using Discord.Interactions;
 using Discord.WebSocket;
 
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 using System.Reflection;
 
@@ -33,6 +34,12 @@ public class InteractionHandler
         // Process when the client is ready, so we can register our commands.
         _client.Ready += ReadyAsync;
         _handler.Log += LogAsync;
+
+        // Register type converters
+        _handler.AddTypeConverter(
+            typeof(Domain.Game),
+            _services.GetRequiredService<GameTypeConverter>()
+        );
 
         // Add the public modules that inherit InteractionModuleBase<T> to the
         // InteractionService
