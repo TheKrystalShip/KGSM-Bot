@@ -1,6 +1,6 @@
 using Discord.Interactions;
 
-namespace TheKrystalShip.Admiral;
+namespace TheKrystalShip.KGSM;
 
 public enum ExampleEnum
 {

@@ -1,4 +1,4 @@
-using TheKrystalShip.Admiral.Domain;
+using TheKrystalShip.KGSM.Domain;
 using TheKrystalShip.Logging;
 
 using RabbitMQ.Client;
@@ -9,7 +9,7 @@ using Newtonsoft.Json;
 
 using System.Text;
 
-namespace TheKrystalShip.Admiral.Services;
+namespace TheKrystalShip.KGSM.Services;
 
 public class RabbitMQClient
 {

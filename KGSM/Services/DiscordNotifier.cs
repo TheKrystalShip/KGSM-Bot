@@ -1,10 +1,10 @@
 using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
-using TheKrystalShip.Admiral.Domain;
+using TheKrystalShip.KGSM.Domain;
 using TheKrystalShip.Logging;
 
-namespace TheKrystalShip.Admiral.Services;
+namespace TheKrystalShip.KGSM.Services;
 
 public class DiscordNotifier
 {

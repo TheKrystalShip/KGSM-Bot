@@ -1,3 +1,3 @@
-# Admiral
+# KGSM-Bot
 
-A little discord bot meant to control game servers.
+A discord bot meant to control game servers through KGSM.

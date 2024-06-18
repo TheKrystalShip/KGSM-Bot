@@ -1,4 +1,4 @@
-namespace TheKrystalShip.Admiral.Domain
+namespace TheKrystalShip.KGSM.Domain
 {
     public record Game(string internalName, string displayName, string channelId)
     {

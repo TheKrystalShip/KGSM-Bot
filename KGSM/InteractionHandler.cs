@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using System.Reflection;
 
-namespace TheKrystalShip.Admiral;
+namespace TheKrystalShip.KGSM;
 
 public class InteractionHandler
 {

@@ -4,7 +4,7 @@ using Discord.WebSocket;
 using System;
 using System.Threading.Tasks;
 
-namespace TheKrystalShip.Admiral.Attributes;
+namespace TheKrystalShip.KGSM.Attributes;
 
 internal class DoUserCheck : PreconditionAttribute
 {

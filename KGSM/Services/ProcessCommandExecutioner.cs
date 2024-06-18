@@ -1,8 +1,8 @@
 using System.Diagnostics;
-using TheKrystalShip.Admiral.Domain;
+using TheKrystalShip.KGSM.Domain;
 using TheKrystalShip.Logging;
 
-namespace TheKrystalShip.Admiral.Services
+namespace TheKrystalShip.KGSM.Services
 {
     /// <summary>
     /// Used to run commands locally on the same machine as the game servers

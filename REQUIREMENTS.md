@@ -13,10 +13,12 @@ List of actions the bot must be able to do
 
 - ❌ Detect when server has a restart pending and automatically update _all_ game servers to "🟡restarting" status.
   - Not possible due to discord rate limiting
-- ✅ Check for new game server versions and update discord status to "🔵needs updating".
-- ✅ Update servers using discord command (scripts are already in place, they just need to be called when there's an update)
+- ❌ Check for new game server versions and update discord status to "🔵needs updating".
+- ❌ Update servers using discord command (scripts are already in place, they just need to be called when there's an update)
+  - Updates are better handled manually because of config/mods.
 - ✅ Periodically run a status check on all servers to make sure the status is correctly reflected on discord.
+  - Handled externally
 
 ## Nice to have
 
-- Send commands to running servers. (Example: `@bot stdin terraria save`).
+- Send commands to running servers. (Example: `/input terraria save`).

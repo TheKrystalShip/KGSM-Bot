@@ -3,7 +3,7 @@ using Discord.Interactions;
 using System;
 using System.Threading.Tasks;
 
-namespace TheKrystalShip.Admiral.Attributes;
+namespace TheKrystalShip.KGSM.Attributes;
 
 public class RequireOwnerAttribute : PreconditionAttribute
 {

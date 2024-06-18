@@ -3,12 +3,12 @@ using Discord.Interactions;
 
 using Microsoft.Extensions.Configuration;
 
-using TheKrystalShip.Admiral.Domain;
-using Game = TheKrystalShip.Admiral.Domain.Game;
+using TheKrystalShip.KGSM.Domain;
+using Game = TheKrystalShip.KGSM.Domain.Game;
 
 using TheKrystalShip.Logging;
 
-namespace TheKrystalShip.Admiral.Modules;
+namespace TheKrystalShip.KGSM.Modules;
 
 // Interaction modules must be public and inherit from an IInteractionModuleBase
 public partial class ServerModule : InteractionModuleBase<SocketInteractionContext>

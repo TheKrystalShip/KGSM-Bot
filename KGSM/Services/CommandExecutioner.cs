@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using TheKrystalShip.Admiral.Domain;
+using TheKrystalShip.KGSM.Domain;
 
-namespace TheKrystalShip.Admiral.Services;
+namespace TheKrystalShip.KGSM.Services;
 
 public class CommandExecutioner : ICommandExecutioner
 {

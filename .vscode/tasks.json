@@ -2,30 +2,30 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "SFTP Admiral",
+            "label": "SFTP KGSM-Bot",
             "command": "sftp",
             "type": "shell",
             "args": [
                 "-r",
-                "cristian@hotbox:/opt/discord/admiral/install",
+                "cristian@hotbox:/opt/discord/kgsm-bot/install",
                 "<<<",
-                "$'put Admiral/bin/Release/net8.0/linux-x64/publish/*'"
+                "$'put KGSM/bin/Release/net8.0/linux-x64/publish/*'"
             ],
-            "dependsOn": "PUBLISH Admiral"
+            "dependsOn": "PUBLISH KGSM-Bot"
         },
         {
-            "label": "DEPLOY Admiral",
+            "label": "DEPLOY KGSM-Bot",
             "type": "shell",
             "command": "ssh",
             "args": [
                 "cristian@hotbox",
                 "-t",
-                "'systemctl restart admiral'"
+                "'systemctl restart kgsm-bot'"
             ],
-            "dependsOn": "SFTP Admiral"
+            "dependsOn": "SFTP KGSM-Bot"
         },
         {
-            "label": "PUBLISH Admiral",
+            "label": "PUBLISH KGSM-Bot",
             "type": "shell",
             "command": "dotnet",
             "args": [

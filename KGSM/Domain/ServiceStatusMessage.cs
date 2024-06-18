@@ -1,4 +1,4 @@
-namespace TheKrystalShip.Admiral.Domain
+namespace TheKrystalShip.KGSM.Domain
 {
     public record ServiceStatusMessage(string service, int status)
     {

@@ -5,11 +5,11 @@ using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-using TheKrystalShip.Admiral.Domain;
-using TheKrystalShip.Admiral.Services;
+using TheKrystalShip.KGSM.Domain;
+using TheKrystalShip.KGSM.Services;
 using TheKrystalShip.Logging;
 
-namespace TheKrystalShip.Admiral;
+namespace TheKrystalShip.KGSM;
 
 public class Program
 {
@@ -41,7 +41,7 @@ public class Program
             _useRabbitMq = true;
 
         _configuration = new ConfigurationBuilder()
-            .AddEnvironmentVariables(prefix: "ADMIRAL_")
+            .AddEnvironmentVariables(prefix: "KGSM_")
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .Build();
 

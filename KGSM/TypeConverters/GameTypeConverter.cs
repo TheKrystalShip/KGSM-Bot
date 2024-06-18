@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 
 using System.Text.RegularExpressions;
 
-namespace TheKrystalShip.Admiral;
+namespace TheKrystalShip.KGSM;
 
 internal sealed partial class GameTypeConverter : TypeConverter
 {
