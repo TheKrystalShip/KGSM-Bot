@@ -83,7 +83,7 @@ public class RabbitMQClient
         StatusChangeReceived(
             new RunningStatusUpdatedArgs(
                 new Game(statusMessage.service, "", ""),
-                statusMessage.RunningStatus
+                statusMessage.status
             )
         );
     }

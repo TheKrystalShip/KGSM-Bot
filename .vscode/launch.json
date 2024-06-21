@@ -2,10 +2,17 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "C#: Debug",
-            "type": "dotnet",
+            "name": ".NET Core Launch",
+            "type": "coreclr",
             "request": "launch",
-            "projectPath": "${workspaceFolder}\\KGSM\\KGSM.csproj"
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/KGSM/bin/Debug/net8.0/KGSM.dll",
+            "args": [
+                "--rabbitmq"
+            ],
+            "cwd": "${workspaceFolder}",
+            "stopAtEntry": false,
+            "console": "integratedTerminal"
         }
     ],
     "compounds": []

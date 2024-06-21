@@ -2,9 +2,9 @@ namespace TheKrystalShip.KGSM;
 
 public enum RunningStatus
 {
-    Online,
-    Offline,
-    Restarting,
-    NeedsUpdate,
-    Error
+    Uninstalled = -1,
+    Offline = 0,
+    Online = 1,
+    NeedsUpdate = 2,
+    Error = 500
 }

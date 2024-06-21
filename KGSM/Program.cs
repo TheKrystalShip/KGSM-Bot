@@ -22,7 +22,7 @@ public class Program
 
     private readonly DiscordSocketConfig _socketConfig = new()
     {
-        GatewayIntents = GatewayIntents.GuildMessages
+        GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildMessages
     };
 
     private readonly InteractionServiceConfig _interactionServiceConfig = new()
@@ -94,15 +94,14 @@ public class Program
         if (_useRabbitMq)
         {
             var rabbitMqClient = _services.GetRequiredService<RabbitMQClient>();
+            var discordNotifier = _services.GetRequiredService<DiscordNotifier>();
+            rabbitMqClient.StatusChangeReceived += discordNotifier.OnRunningStatusUpdated;
 
             if (await rabbitMqClient.LoginAsync())
             {
                 await rabbitMqClient.StartAsync(
                     _configuration["rabbitmq:routingKey"] ?? string.Empty
                 );
-
-                var discordNotifier = _services.GetRequiredService<DiscordNotifier>();
-                rabbitMqClient.StatusChangeReceived += discordNotifier.OnRunningStatusUpdated;
             }
         }
 
