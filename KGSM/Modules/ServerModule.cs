@@ -14,7 +14,7 @@ namespace TheKrystalShip.KGSM.Modules;
 public partial class ServerModule : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly InteractionHandler _handler;
-    private readonly ICommandExecutioner _executioner;
+    private readonly IInterop _executioner;
     private readonly IConfiguration _configuration;
 
     private readonly Logger<ServerModule> _logger;
@@ -22,7 +22,7 @@ public partial class ServerModule : InteractionModuleBase<SocketInteractionConte
     // Constructor injection is also a valid way to access the dependencies
     public ServerModule(
         InteractionHandler handler,
-        ICommandExecutioner commandExecutioner,
+        IInterop commandExecutioner,
         IConfiguration configuration
     )
     {

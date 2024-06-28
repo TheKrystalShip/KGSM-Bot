@@ -12,7 +12,7 @@ namespace TheKrystalShip.KGSM.Services;
 /// Used to interact with the server via ssh.
 /// Automatically connects using login details from appsettings.json
 /// </summary>
-public class SshCommandExecutioner : ICommandExecutioner
+public class SshCommandExecutioner : IInterop
 {
     private readonly Logger<SshCommandExecutioner> _logger;
     private readonly IConfiguration _configuration;
@@ -23,15 +23,10 @@ public class SshCommandExecutioner : ICommandExecutioner
         _configuration = configuration;
         _logger = new();
 
-        string sshHost = _configuration["ssh:host"] ?? string.Empty;
-        string sshPort = _configuration["ssh:port"] ?? string.Empty;
-        string sshUsername = _configuration["ssh:username"] ?? string.Empty;
-        string sshPassword = _configuration["ssh:password"] ?? string.Empty;
-
-        if (sshHost == string.Empty || sshPort == string.Empty || sshUsername == string.Empty || sshPassword == string.Empty)
-        {
-            throw new ArgumentNullException("One or more connection details were null");
-        }
+        string sshHost = _configuration["ssh:host"] ?? throw new ArgumentNullException(nameof(sshHost));
+        string sshPort = _configuration["ssh:port"] ?? throw new ArgumentNullException(nameof(sshPort));
+        string sshUsername = _configuration["ssh:username"] ?? throw new ArgumentNullException(nameof(sshUsername));
+        string sshPassword = _configuration["ssh:password"] ?? throw new ArgumentNullException(nameof(sshPassword));
 
         int port = int.Parse(sshPort);
         _sshClient = new SshClient(sshHost, port, sshUsername, sshPassword);

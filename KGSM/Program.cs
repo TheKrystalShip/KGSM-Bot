@@ -41,7 +41,7 @@ public class Program
             _useRabbitMq = true;
 
         _configuration = new ConfigurationBuilder()
-            .AddEnvironmentVariables(prefix: "KGSM_")
+            .AddEnvironmentVariables()
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .Build();
 
@@ -57,9 +57,9 @@ public class Program
 #if DEBUG
             .AddSingleton<SshCommandExecutioner>()
 #else
-            .AddSingleton<ProcessCommandExecutioner>()
+            .AddSingleton<ProcessInterop>()
 #endif
-            .AddSingleton<ICommandExecutioner, CommandExecutioner>()
+            .AddSingleton<IInterop, KGSMInterop>()
             .AddSingleton<GameTypeConverter>()
             .AddSingleton<DiscordNotifier>();
 

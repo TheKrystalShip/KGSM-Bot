@@ -7,11 +7,11 @@ namespace TheKrystalShip.KGSM.Services
     /// <summary>
     /// Used to run commands locally on the same machine as the game servers
     /// </summary>
-    public class ProcessCommandExecutioner : ICommandExecutioner
+    public class ProcessInterop : IInterop
     {
-        private readonly Logger<ProcessCommandExecutioner> _logger;
+        private readonly Logger<ProcessInterop> _logger;
 
-        public ProcessCommandExecutioner()
+        public ProcessInterop()
         {
             _logger = new();
         }
@@ -47,9 +47,12 @@ namespace TheKrystalShip.KGSM.Services
 
             // Random intermittent error that StandardError has not been redirected
             // when it clearly has...
-            try {
+            try
+            {
                 stderr = process.StandardError.ReadToEnd();
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 _logger.LogError(e);
             }
 

@@ -1,6 +1,6 @@
 namespace TheKrystalShip.KGSM.Domain
 {
-    public interface ICommandExecutioner
+    public interface IInterop
     {
         public Result Execute(string command, string[] args);
         public Result Execute(string command) => new();
