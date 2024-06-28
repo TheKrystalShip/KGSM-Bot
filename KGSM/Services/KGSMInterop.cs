@@ -12,11 +12,7 @@ public class KGSMInterop : IInterop
 
     public KGSMInterop(IServiceProvider services, IConfiguration configuration)
     {
-#if DEBUG
-        _interop = services.GetRequiredService<SshCommandExecutioner>();
-#else
         _interop = services.GetRequiredService<ProcessInterop>();
-#endif
         _configuration = configuration;
 
         string? kgsmScript = _configuration["KGSM_ROOT"] ??
@@ -44,8 +40,8 @@ public class KGSMInterop : IInterop
         => _interop.Execute(_kgsmScript, ["--service", process, "--is-active"]);
 
     public Result GetLogs(string process)
-        => _interop.Execute(_kgsmScript, ["--service", process, "--get-logs"]);
+        => _interop.Execute(_kgsmScript, ["--service", process, "--logs"]);
 
     public Result GetIp()
-        => _interop.Execute(_kgsmScript, ["--get-ip"]);
+        => _interop.Execute(_kgsmScript, ["--ip"]);
 }

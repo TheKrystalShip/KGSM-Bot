@@ -54,11 +54,7 @@ public class Program
                 _interactionServiceConfig
             ))
             .AddSingleton<InteractionHandler>()
-#if DEBUG
-            .AddSingleton<SshCommandExecutioner>()
-#else
             .AddSingleton<ProcessInterop>()
-#endif
             .AddSingleton<IInterop, KGSMInterop>()
             .AddSingleton<GameTypeConverter>()
             .AddSingleton<DiscordNotifier>();
