@@ -76,6 +76,17 @@ public partial class ServerModule : InteractionModuleBase<SocketInteractionConte
         await RespondAsync(result.Output);
     }
 
+    [SlashCommand("info", "Get information about the game server installation")]
+    public async Task InfoAsync(
+        [Summary(description: "Text channel of the game server")]
+        [ChannelTypes(ChannelType.Text)]
+        Game game
+    )
+    {
+        Result result = _executioner.Info(game.internalName);
+        await RespondAsync(result.Output);
+    }
+
     [SlashCommand("is-active", "Check if a game server is currently running")]
     public async Task IsActiveAsync(
         [Summary(description: "Text channel of the game server")]
