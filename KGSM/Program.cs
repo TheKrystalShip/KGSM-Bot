@@ -5,7 +5,6 @@ using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-using TheKrystalShip.KGSM.Domain;
 using TheKrystalShip.KGSM.Services;
 using TheKrystalShip.Logging;
 
@@ -45,6 +44,9 @@ public class Program
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .Build();
 
+        string? kgsmPath = _configuration["kgsmPath"] ??
+            throw new Exception("\"kgsmPath\" not set in appsettings.json");
+
         var serviceCollection = new ServiceCollection()
             .AddSingleton(_configuration)
             .AddSingleton(_socketConfig)
@@ -54,10 +56,9 @@ public class Program
                 _interactionServiceConfig
             ))
             .AddSingleton<InteractionHandler>()
-            .AddSingleton<ProcessInterop>()
-            .AddSingleton<IInterop, KGSMInterop>()
             .AddSingleton<GameTypeConverter>()
-            .AddSingleton<DiscordNotifier>();
+            .AddSingleton<DiscordNotifier>()
+            .AddSingleton(x => new KgsmInterop(kgsmPath));
 
         if (_useRabbitMq)
         {

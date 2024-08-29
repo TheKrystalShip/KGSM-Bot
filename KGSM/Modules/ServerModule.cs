@@ -1,9 +1,6 @@
 using Discord;
 using Discord.Interactions;
 
-using Microsoft.Extensions.Configuration;
-
-using TheKrystalShip.KGSM.Domain;
 using Game = TheKrystalShip.KGSM.Domain.Game;
 
 using TheKrystalShip.Logging;
@@ -13,22 +10,13 @@ namespace TheKrystalShip.KGSM.Modules;
 // Interaction modules must be public and inherit from an IInteractionModuleBase
 public partial class ServerModule : InteractionModuleBase<SocketInteractionContext>
 {
-    private readonly InteractionHandler _handler;
-    private readonly IInterop _executioner;
-    private readonly IConfiguration _configuration;
-
+    private readonly KgsmInterop _interop;
     private readonly Logger<ServerModule> _logger;
 
     // Constructor injection is also a valid way to access the dependencies
-    public ServerModule(
-        InteractionHandler handler,
-        IInterop commandExecutioner,
-        IConfiguration configuration
-    )
+    public ServerModule(KgsmInterop interop)
     {
-        _handler = handler;
-        _executioner = commandExecutioner;
-        _configuration = configuration;
+        _interop = interop;
         _logger = new();
     }
 
@@ -40,7 +28,7 @@ public partial class ServerModule : InteractionModuleBase<SocketInteractionConte
     )
     {
         await RespondAsync($"Starting {game}...");
-        _executioner.Start(game.internalName);
+        _interop.Start(game.internalName);
     }
 
     [SlashCommand("stop", "Shut down a game server")]
@@ -51,7 +39,7 @@ public partial class ServerModule : InteractionModuleBase<SocketInteractionConte
     )
     {
         await RespondAsync($"Stopping {game}...");
-        _executioner.Stop(game.internalName);
+        _interop.Stop(game.internalName);
     }
 
     [SlashCommand("restart", "Restart a game server")]
@@ -62,7 +50,7 @@ public partial class ServerModule : InteractionModuleBase<SocketInteractionConte
     )
     {
         await RespondAsync($"Restarting {game}...");
-        _executioner.Restart(game.internalName);
+        _interop.Restart(game.internalName);
     }
 
     [SlashCommand("status", "Get a detailed status of a game server")]
@@ -72,8 +60,8 @@ public partial class ServerModule : InteractionModuleBase<SocketInteractionConte
         Game game
     )
     {
-        Result result = _executioner.Status(game.internalName);
-        await RespondAsync(result.Output);
+        KgsmResult result = _interop.Status(game.internalName);
+        await RespondAsync(result.Stdout ?? result.Stderr);
     }
 
     [SlashCommand("info", "Get information about the game server installation")]
@@ -83,8 +71,8 @@ public partial class ServerModule : InteractionModuleBase<SocketInteractionConte
         Game game
     )
     {
-        Result result = _executioner.Info(game.internalName);
-        await RespondAsync(result.Output);
+        KgsmResult result = _interop.Info(game.internalName);
+        await RespondAsync(result.Stdout ?? result.Stderr);
     }
 
     [SlashCommand("is-active", "Check if a game server is currently running")]
@@ -99,13 +87,13 @@ public partial class ServerModule : InteractionModuleBase<SocketInteractionConte
             {
                 "active" => "online",
                 "inactive" => "offline",
-                _ => "offline"
+                _ => "invalid state"
             };
 
-        Result result = _executioner.IsActive(game.internalName);
-        result.Output = $"{game} is {GetSynonym(result.Output)}";
+        KgsmResult result = _interop.IsActive(game.internalName);
+        string outputMessage = $"{game} is {GetSynonym(result.Stdout ?? result.Stderr ?? string.Empty)}";
 
-        await RespondAsync(result.Output);
+        await RespondAsync(outputMessage);
     }
 
     [SlashCommand("get-logs", "Get the last 10 lines a game server log")]
@@ -117,12 +105,12 @@ public partial class ServerModule : InteractionModuleBase<SocketInteractionConte
     {
         await RespondAsync($"Fetching logs...");
 
-        Result result = _executioner.GetLogs(game.internalName);
+        KgsmResult result = _interop.GetLogs(game.internalName);
 
         string followupText = $"No logs found";
-        if (result.IsSuccessWithOutput)
+        if (result.ExitCode == 0)
         {
-            followupText = result.Output;
+            followupText = result.Stdout ?? string.Empty;
         }
 
         EmbedBuilder embedBuilder = new EmbedBuilder()
@@ -138,7 +126,7 @@ public partial class ServerModule : InteractionModuleBase<SocketInteractionConte
     [SlashCommand("get-ip", "Get the server's IP address")]
     public async Task GetIPAsync()
     {
-        Result result = _executioner.GetIp();
-        await RespondAsync(result.Output);
+        KgsmResult result = _interop.GetIp();
+        await RespondAsync(result.Stdout ?? result.Stderr);
     }
 }
