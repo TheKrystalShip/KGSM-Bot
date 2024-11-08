@@ -1,4 +1,4 @@
-using Discord;
+﻿using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 
@@ -124,7 +124,7 @@ public class InteractionHandler
                     // implement
                     break;
                 default:
-                    await context.Interaction.RespondAsync(result.ErrorReason);
+                    await context.Interaction.RespondAsync(result.ErrorReason ?? "There was an error");
                     break;
             }
     }

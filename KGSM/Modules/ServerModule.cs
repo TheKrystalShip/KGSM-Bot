@@ -143,33 +143,28 @@ public partial class ServerModule : InteractionModuleBase<SocketInteractionConte
         await FollowupAsync(result.Stderr ?? result.Stdout);
     }
 
-    public class BlueprintAutocompleteHandler : AutocompleteHandler
+    [SlashCommand("uninstall", "Uninstall a game server")]
+    public async Task UninstallAsync(
+        [Summary(description: "Game server instance")]
+        [Autocomplete(typeof(InstancesAutocompleteHandler))]
+        string instance
+    )
     {
-        private readonly List<string> _blueprints = [];
-        private readonly KgsmInterop _interop;
+        await RespondAsync($"Uninstalling {instance}...");
 
-        public BlueprintAutocompleteHandler(KgsmInterop interop)
-        {
-            _interop = interop;
-            KgsmResult result = _interop.GetBlueprints();
+        KgsmResult result = _interop.Uninstall(instance);
 
-            if (result.ExitCode == 0) {
-                _blueprints = result.Stdout?.Split('\n').ToList() ?? [];
-            }
-        }
+        if (result.ExitCode == 0) {
+            string message = "Uninstall successful";
 
-        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
-        {
-            string currentInput = autocompleteInteraction.Data.Current.Value?.ToString() ?? string.Empty;
+            if (result.Stdout != string.Empty)
+                message = result.Stdout;
+            if (result.Stderr != string.Empty)
+                message = result.Stderr;
             
-            // Generate list of best matches
-            IEnumerable<AutocompleteResult> suggestions = _blueprints
-                .Where(choice => choice.StartsWith(currentInput, StringComparison.OrdinalIgnoreCase))
-                .Select(choice => new AutocompleteResult(choice, choice))
-                .ToList();
-
-            // Max 25 suggestions at a time because of Discord API
-            return AutocompletionResult.FromSuccess(suggestions.Take(25));
+            await FollowupAsync(message);
+        } else {
+            await FollowupAsync($"Something went wrong.\nExit code {result.ExitCode}\nStdout: {result.Stdout}\nStderr: {result.Stderr}");
         }
     }
 }
