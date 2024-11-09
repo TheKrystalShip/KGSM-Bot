@@ -58,6 +58,7 @@ public class Program
             .AddSingleton<InteractionHandler>()
             .AddSingleton<GameTypeConverter>()
             .AddSingleton<DiscordNotifier>()
+            .AddSingleton<DiscordChannelRegistry>()
             .AddSingleton(x => new KgsmInterop(kgsmPath));
 
         if (_useRabbitMq)

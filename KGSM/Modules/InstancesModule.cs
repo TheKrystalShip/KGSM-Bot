@@ -1,7 +1,11 @@
 ﻿using Discord;
 using Discord.Interactions;
 
+using System.Text.RegularExpressions;
+
 using Game = TheKrystalShip.KGSM.Domain.Game;
+
+using TheKrystalShip.KGSM.Services;
 
 using TheKrystalShip.Logging;
 
@@ -11,12 +15,14 @@ namespace TheKrystalShip.KGSM.Modules;
 public partial class InstancesModule : InteractionModuleBase<SocketInteractionContext>
 {
 
+    private readonly DiscordNotifier _discordNotifier;
     private readonly KgsmInterop _interop;
     private readonly Logger<InstancesModule> _logger;
 
     // Constructor injection is also a valid way to access the dependencies
-    public InstancesModule(KgsmInterop interop)
+    public InstancesModule(DiscordNotifier discordNotifier, KgsmInterop interop)
     {
+        _discordNotifier = discordNotifier;
         _interop = interop;
         _logger = new();
     }
@@ -142,7 +148,15 @@ public partial class InstancesModule : InteractionModuleBase<SocketInteractionCo
                 message = result.Stdout;
             if (result.Stderr != string.Empty)
                 message = result.Stderr;
-            
+
+            string pattern = @"Instance\s+(.+?)\s+uninstalled";
+            Match match = Regex.Match(message, pattern);
+
+            if (match.Success) {
+                string instanceId = match.Groups[1].Value;
+                await _discordNotifier.OnInstanceUninstalledAsync(Context.Guild.Id, instanceId);
+            }
+
             await FollowupAsync(message);
         } else {
             await FollowupAsync($"Something went wrong.\nExit code {result.ExitCode}\nStdout: {result.Stdout}\nStderr: {result.Stderr}");
