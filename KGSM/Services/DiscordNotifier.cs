@@ -30,7 +30,7 @@ public class DiscordNotifier
         string instanceId = args.InstanceId;
         RunningStatus newStatus = args.RunningStatus;
 
-        string discordChannelId = _settingsManager.Settings.Instances[instanceId].ChannelId ?? string.Empty;
+        string discordChannelId = _settingsManager.GetInstance(instanceId)?.ChannelId ?? string.Empty;
 
         if (discordChannelId == string.Empty)
         {

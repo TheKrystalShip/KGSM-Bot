@@ -22,7 +22,7 @@ public class DiscordChannelRegistry
 
     public async Task AddOrUpdateChannelAsync(ulong guildId, string blueprint, string instanceId)
     {
-        string instancesCategoryId = _settingsManager.Settings.Discord.InstancesCategoryId ?? string.Empty;
+        string instancesCategoryId = _settingsManager.Discord.InstancesCategoryId ?? string.Empty;
 
         if (instancesCategoryId == string.Empty)
         {
@@ -71,7 +71,7 @@ public class DiscordChannelRegistry
             return;
         }
 
-        string discordChannelId = _settingsManager.Settings.Instances[instanceId]?.ChannelId ?? string.Empty;
+        string discordChannelId = _settingsManager.GetInstance(instanceId)?.ChannelId ?? string.Empty;
 
         if (discordChannelId == string.Empty)
         {

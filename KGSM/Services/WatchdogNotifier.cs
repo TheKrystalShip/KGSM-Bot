@@ -32,13 +32,13 @@ public class WatchdogNotifier
 
         var triggers = _settingsManager.GetTrigger(instanceId);
         
-        if (triggers.OnlineTrigger == string.Empty)
+        if (triggers?.OnlineTrigger == string.Empty)
         {
             _logger.LogError($"OnlineTrigger for {instanceId} is empty, aborting");
             return;
         }
         
-        if (triggers.OfflineTrigger == string.Empty)
+        if (triggers?.OfflineTrigger == string.Empty)
         {
             _logger.LogError($"OfflineTrigger for {instanceId} is empty, aborting");
             return;
