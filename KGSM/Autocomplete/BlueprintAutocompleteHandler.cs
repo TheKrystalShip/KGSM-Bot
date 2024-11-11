@@ -3,7 +3,6 @@ using Discord.Interactions;
 
 namespace TheKrystalShip.KGSM;
 
-
 public class BlueprintAutocompleteHandler : AutocompleteHandler
 {
     private readonly List<string> _blueprints = [];

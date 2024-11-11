@@ -1,7 +1,4 @@
-﻿using Discord;
-using Discord.Interactions;
-
-using Game = TheKrystalShip.KGSM.Domain.Game;
+﻿using Discord.Interactions;
 
 using TheKrystalShip.Logging;
 

@@ -7,9 +7,6 @@
             "request": "launch",
             "preLaunchTask": "build",
             "program": "${workspaceFolder}/KGSM/bin/Debug/net8.0/KGSM.dll",
-            "args": [
-                "--rabbitmq"
-            ],
             "cwd": "${workspaceFolder}",
             "stopAtEntry": false,
             "console": "integratedTerminal"

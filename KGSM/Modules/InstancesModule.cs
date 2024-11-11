@@ -3,8 +3,6 @@ using Discord.Interactions;
 
 using System.Text.RegularExpressions;
 
-using Game = TheKrystalShip.KGSM.Domain.Game;
-
 using TheKrystalShip.KGSM.Services;
 
 using TheKrystalShip.Logging;
@@ -14,79 +12,80 @@ namespace TheKrystalShip.KGSM.Modules;
 // Interaction modules must be public and inherit from an IInteractionModuleBase
 public partial class InstancesModule : InteractionModuleBase<SocketInteractionContext>
 {
-
-    private readonly DiscordNotifier _discordNotifier;
+    private readonly DiscordChannelRegistry _discordChannelRegistry;
     private readonly KgsmInterop _interop;
     private readonly Logger<InstancesModule> _logger;
 
+    private const string SUMMARY = "Game server instance";
+
     // Constructor injection is also a valid way to access the dependencies
-    public InstancesModule(DiscordNotifier discordNotifier, KgsmInterop interop)
+    public InstancesModule(DiscordChannelRegistry discordChannelRegistry, KgsmInterop interop)
     {
-        _discordNotifier = discordNotifier;
+        _discordChannelRegistry = discordChannelRegistry;
         _interop = interop;
         _logger = new();
     }
 
     [SlashCommand("start", "Start up a game server")]
     public async Task StartAsync(
-        [Summary(description: "Text channel of the game server")]
-        [ChannelTypes(ChannelType.Text)]
-        Game game
+        [Summary(description: SUMMARY)]
+        [Autocomplete(typeof(InstancesAutocompleteHandler))]
+        string instance
     )
     {
-        await RespondAsync($"Starting {game}...");
-        _interop.Start(game.internalName);
+        await RespondAsync($"Starting {instance}...");
+        _interop.Start(instance);
     }
 
     [SlashCommand("stop", "Shut down a game server")]
     public async Task StopAsync(
-        [Summary(description: "Text channel of the game server")]
-        [ChannelTypes(ChannelType.Text)]
-        Game game
+        [Summary(description: SUMMARY)]
+        [Autocomplete(typeof(InstancesAutocompleteHandler))]
+        string instance
     )
     {
-        await RespondAsync($"Stopping {game}...");
-        _interop.Stop(game.internalName);
+        await RespondAsync($"Stopping {instance}...");
+        _interop.Stop(instance);
     }
 
     [SlashCommand("restart", "Restart a game server")]
     public async Task RestartAsync(
-        [Summary(description: "Text channel of the game server")]
-        [ChannelTypes(ChannelType.Text)]
-        Game game
+        [Summary(description: SUMMARY)]
+        [Autocomplete(typeof(InstancesAutocompleteHandler))]
+        string instance
     )
     {
-        await RespondAsync($"Restarting {game}...");
-        _interop.Restart(game.internalName);
+        await RespondAsync($"Restarting {instance}...");
+        _interop.Restart(instance);
     }
 
     [SlashCommand("status", "Get a detailed status of a game server")]
     public async Task StatusAsync(
-        [Summary(description: "Text channel of the game server")]
-        [ChannelTypes(ChannelType.Text)]
-        Game game
+        [Summary(description: SUMMARY)]
+        [Autocomplete(typeof(InstancesAutocompleteHandler))]
+        string instance
     )
     {
-        KgsmResult result = _interop.Status(game.internalName);
+        KgsmResult result = _interop.Status(instance);
         await RespondAsync(result.Stdout ?? result.Stderr);
     }
 
     [SlashCommand("info", "Get information about the game server installation")]
     public async Task InfoAsync(
-        [Summary(description: "Text channel of the game server")]
-        [ChannelTypes(ChannelType.Text)]
-        Game game
+        [Summary(description: SUMMARY)]
+        [Autocomplete(typeof(InstancesAutocompleteHandler))]
+        string instance
     )
     {
-        KgsmResult result = _interop.Info(game.internalName);
+        KgsmResult result = _interop.Info(instance);
         await RespondAsync(result.Stdout ?? result.Stderr);
     }
 
-    [SlashCommand("is-active", "Check if a game server is currently running")]
+    [SlashCommand("is-active", "Check if an instance is currently running")]
     public async Task IsActiveAsync(
-        [Summary(description: "Text channel of the game server")]
-        [ChannelTypes(ChannelType.Text)]
-        Game game
+        [Summary(description: SUMMARY)]
+        [Autocomplete(typeof(InstancesAutocompleteHandler))]
+        string instance
     )
     {
         static string GetSynonym(string input) =>
@@ -97,22 +96,22 @@ public partial class InstancesModule : InteractionModuleBase<SocketInteractionCo
                 _ => "invalid state"
             };
 
-        KgsmResult result = _interop.IsActive(game.internalName);
-        string outputMessage = $"{game} is {GetSynonym(result.Stdout ?? result.Stderr ?? string.Empty)}";
+        KgsmResult result = _interop.IsActive(instance);
+        string outputMessage = $"{instance} is {GetSynonym(result.Stdout ?? result.Stderr ?? string.Empty)}";
 
         await RespondAsync(outputMessage);
     }
 
     [SlashCommand("get-logs", "Get the last 10 lines a game server log")]
     public async Task GetLogsAsync(
-        [Summary(description: "Text channel of the game server")]
-        [ChannelTypes(ChannelType.Text)]
-        Game game
+        [Summary(description: SUMMARY)]
+        [Autocomplete(typeof(InstancesAutocompleteHandler))]
+        string instance
     )
     {
-        await RespondAsync($"Fetching logs...");
+        await RespondAsync($"Fetching logs for {instance}...");
 
-        KgsmResult result = _interop.GetLogs(game.internalName);
+        KgsmResult result = _interop.GetLogs(instance);
 
         string followupText = $"No logs found";
         if (result.ExitCode == 0)
@@ -122,7 +121,7 @@ public partial class InstancesModule : InteractionModuleBase<SocketInteractionCo
 
         EmbedBuilder embedBuilder = new EmbedBuilder()
             .WithAuthor(Context.User.ToString(), Context.User.GetAvatarUrl() ?? Context.User.GetDefaultAvatarUrl())
-            .WithTitle($"{game.displayName} logs:")
+            .WithTitle($"{instance} logs:")
             .WithDescription(followupText)
             .WithColor(Color.Green)
             .WithCurrentTimestamp();
@@ -132,7 +131,7 @@ public partial class InstancesModule : InteractionModuleBase<SocketInteractionCo
 
     [SlashCommand("uninstall", "Uninstall a game server")]
     public async Task UninstallAsync(
-        [Summary(description: "Game server instance")]
+        [Summary(description: SUMMARY)]
         [Autocomplete(typeof(InstancesAutocompleteHandler))]
         string instance
     )
@@ -154,7 +153,7 @@ public partial class InstancesModule : InteractionModuleBase<SocketInteractionCo
 
             if (match.Success) {
                 string instanceId = match.Groups[1].Value;
-                await _discordNotifier.OnInstanceUninstalledAsync(Context.Guild.Id, instanceId);
+                await _discordChannelRegistry.RemoveChannelAsync(Context.Guild.Id, instanceId);
             }
 
             await FollowupAsync(message);

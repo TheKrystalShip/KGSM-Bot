@@ -1,6 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
-using System.Text.Json;
-using System.IO;
+﻿using Discord.Rest;
+using Discord.WebSocket;
 
 using TheKrystalShip.Logging;
 
@@ -8,78 +7,93 @@ namespace TheKrystalShip.KGSM.Services;
 
 public class DiscordChannelRegistry
 {
-    private readonly IConfiguration _configuration;
-    private readonly string _configFilePath;
-    private Dictionary<string, GameChannel> _channelMap;
+    private readonly DiscordSocketClient _discordClient;
+    private readonly WatchdogNotifier _watchdogNotifier;
     private readonly Logger<DiscordChannelRegistry> _logger;
+    private readonly AppSettingsManager _settingsManager;
 
-    public DiscordChannelRegistry(IConfiguration configuration)
+    public DiscordChannelRegistry(DiscordSocketClient discordClient, WatchdogNotifier watchdogNotifier, AppSettingsManager settingsManager)
     {
-        _configuration = configuration;
-        _configFilePath = "appsettings.json";
+        _discordClient = discordClient;
+        _watchdogNotifier = watchdogNotifier;
         _logger = new();
-
-        _channelMap = _configuration.GetSection("games").Get<Dictionary<string, GameChannel>>() ?? new();
+        _settingsManager = settingsManager;
     }
 
-    // Represents the channel configuration for each game
-    public class GameChannel
+    public async Task AddOrUpdateChannelAsync(ulong guildId, string blueprint, string instanceId)
     {
-        public string DisplayName { get; set; } = "";
-        public string ChannelId { get; set; } = "";
-    }
+        string instancesCategoryId = _settingsManager.Settings.Discord.InstancesCategoryId ?? string.Empty;
 
-    public Dictionary<string, GameChannel> GetChannels()
-    {
-        return _channelMap;
-    }
-
-    public async Task AddOrUpdateChannelAsync(string instanceId, string displayName, string channelId)
-    {
-        if (_channelMap.ContainsKey(instanceId))
+        if (instancesCategoryId == string.Empty)
         {
-            _channelMap[instanceId].DisplayName = displayName;
-            _channelMap[instanceId].ChannelId = channelId;
-
-            _logger.LogInformation($"Updated - Channel: {instanceId}, DisplayName: {displayName}, ChannelId: {channelId}");
-        }
-        else
-        {
-            _channelMap[instanceId] = new GameChannel { DisplayName = displayName, ChannelId = channelId };
-
-            _logger.LogInformation($"Added - Channel: {instanceId}, DisplayName: {displayName}, ChannelId: {channelId}");
+            _logger.LogError($"Failed to get instancesCategoryId from config file");
+            return;
         }
 
-        await SaveConfigurationAsync();
+        if (_discordClient.GetGuild(guildId) is not SocketGuild socketGuild)
+        {
+            _logger.LogError($"Failed to load guild with ID: {guildId}");
+            return;
+        }
+
+        if (
+                socketGuild.GetCategoryChannel(ulong.Parse(instancesCategoryId))
+                is not SocketCategoryChannel categoryChannel
+            )
+        {
+            _logger.LogError($"Failed to load category channel with ID: {instancesCategoryId}");
+            return;
+        }
+
+        RestTextChannel newTextChannel = await socketGuild
+            .CreateTextChannelAsync(instanceId, props => props.CategoryId = categoryChannel.Id);
+
+        string channelId = newTextChannel.Id.ToString();
+
+        InstanceSettings instanceSettings = new()
+        {
+            ChannelId = newTextChannel.Id.ToString(),
+            Blueprint = blueprint
+        };
+
+        _settingsManager.AddOrUpdateInstance(instanceId, instanceSettings);
+
+        _logger.LogInformation($"Added - {instanceSettings}");
+
+        _watchdogNotifier.StartMonitoring(instanceId);
     }
 
-    public async Task RemoveChannelAsync(string instanceId)
+    public async Task RemoveChannelAsync(ulong guildId, string instanceId)
     {
-        if (_channelMap.Remove(instanceId))
+        if (_discordClient.GetGuild(guildId) is not SocketGuild socketGuild)
         {
-            _logger.LogInformation($"Removed - Channel: {instanceId}");
-            await SaveConfigurationAsync();
+            _logger.LogError($"Failed to load guild with ID: {guildId}");
+            return;
         }
-        else
+
+        string discordChannelId = _settingsManager.Settings.Instances[instanceId]?.ChannelId ?? string.Empty;
+
+        if (discordChannelId == string.Empty)
         {
-            _logger.LogError($"Channel {instanceId} not found");
+            _logger.LogError($"Failed to get discordChannelId for game: {instanceId}");
+            return;
         }
-    }
 
-    private async Task SaveConfigurationAsync()
-    {
-        string jsonString = await File.ReadAllTextAsync(_configFilePath);
-        var jsonDocument = JsonDocument.Parse(jsonString);
+        var textChannel = socketGuild.TextChannels.FirstOrDefault(
+                channel => channel.Id == ulong.Parse(discordChannelId));
 
-        // Parse the JSON into a dictionary
-        var configDictionary = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonDocument.RootElement.GetRawText()) ?? new();
+        if (textChannel is null)
+        {
+            _logger.LogError($"Failed to load text channel with name: {instanceId}");
+            return;
+        }
 
-        configDictionary["games"] = _channelMap;
+        await textChannel.DeleteAsync();
+        
+        _settingsManager.RemoveInstance(instanceId);
+        
+        _logger.LogInformation($"Removed - Channel: {instanceId}, ID: {textChannel.Id}");
 
-        // Serialize the updated config back to JSON
-        var updatedJson = JsonSerializer.Serialize(configDictionary, new JsonSerializerOptions { WriteIndented = true });
-
-        // Write the updated JSON to the config file
-        await File.WriteAllTextAsync(_configFilePath, updatedJson);
+        _watchdogNotifier.StopMonitoring(instanceId);
     }
 }

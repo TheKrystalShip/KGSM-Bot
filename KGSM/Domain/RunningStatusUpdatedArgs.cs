@@ -1,8 +1,8 @@
-namespace TheKrystalShip.KGSM.Domain
+﻿namespace TheKrystalShip.KGSM.Domain
 {
-    public class RunningStatusUpdatedArgs(Game game, RunningStatus runningStatus) : EventArgs
+    public class RunningStatusUpdatedArgs(string instanceId, RunningStatus runningStatus) : EventArgs
     {
-        public Game Game { get; set; } = game;
+        public string InstanceId { get; set; } = instanceId;
         public RunningStatus RunningStatus { get; set; } = runningStatus;
     }
 }

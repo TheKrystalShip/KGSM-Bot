@@ -1,7 +1,6 @@
 ﻿using Discord;
-using Discord.Rest;
 using Discord.WebSocket;
-using Microsoft.Extensions.Configuration;
+
 using TheKrystalShip.KGSM.Domain;
 using TheKrystalShip.Logging;
 
@@ -9,20 +8,14 @@ namespace TheKrystalShip.KGSM.Services;
 
 public class DiscordNotifier
 {
-    private readonly DiscordChannelRegistry _discordChannelRegistry;
     private readonly DiscordSocketClient _discordClient;
     private readonly Logger<DiscordNotifier> _logger;
-    private readonly IConfiguration _configuration;
+    private readonly AppSettingsManager _settingsManager;
 
-    public DiscordNotifier(
-        DiscordChannelRegistry discordChannelRegistry,
-        DiscordSocketClient discordSocketClient,
-        IConfiguration configuration
-    )
+    public DiscordNotifier(DiscordSocketClient discordSocketClient, AppSettingsManager settingsManager)
     {
-        _discordChannelRegistry = discordChannelRegistry;
         _discordClient = discordSocketClient;
-        _configuration = configuration;
+        _settingsManager = settingsManager;
         _logger = new();
     }
 
@@ -34,18 +27,18 @@ public class DiscordNotifier
     /// <returns></returns>
     public async Task OnRunningStatusUpdated(RunningStatusUpdatedArgs args)
     {
-        string game = args.Game.internalName;
+        string instanceId = args.InstanceId;
         RunningStatus newStatus = args.RunningStatus;
 
-        string discordChannelId = _configuration[$"games:{game}:channelId"] ?? string.Empty;
+        string discordChannelId = _settingsManager.Settings.Instances[instanceId].ChannelId ?? string.Empty;
 
         if (discordChannelId == string.Empty)
         {
-            _logger.LogError($"Failed to get discordChannelId for game: {game}");
+            _logger.LogError($"Failed to get discordChannelId for instance: {instanceId}");
             return;
         }
 
-        string emote = _configuration[$"discord:status:{newStatus}"] ?? string.Empty;
+        string emote = _settingsManager.GetStatus(newStatus) ?? string.Empty;
 
         if (emote == string.Empty)
         {
@@ -62,8 +55,8 @@ public class DiscordNotifier
         if (discordChannel is IMessageChannel messageChannel)
             await messageChannel.SendMessageAsync($"New status: {newStatus}");
 
-        string newChannelStatusName = $"{emote}{game}";
-        _logger.LogInformation($"New status for {game}: {newStatus}");
+        string newChannelStatusName = $"{emote}{instanceId}";
+        _logger.LogInformation($"New status for {instanceId}: {newStatus}");
 
         try
         {
@@ -74,73 +67,5 @@ public class DiscordNotifier
         {
             _logger.LogError(e);
         }
-    }
-
-    public async Task OnInstanceInstalledAsync(ulong guildId, string instanceId)
-    {
-        string instancesCategoryId = _configuration[$"discord:instancesCategoryId"] ?? string.Empty;
-
-        if (instancesCategoryId == string.Empty)
-        {
-            _logger.LogError($"Failed to get instancesCategoryId from config file");
-            return;
-        }
-
-        if (_discordClient.GetGuild(guildId) is not SocketGuild socketGuild)
-        {
-            _logger.LogError($"Failed to load guild with ID: {guildId}");
-            return;
-        }
-
-        if (
-                socketGuild.GetCategoryChannel(ulong.Parse(instancesCategoryId))
-                is not SocketCategoryChannel categoryChannel
-            )
-        {
-            _logger.LogError($"Failed to load category channel with ID: {instancesCategoryId}");
-            return;
-        }
-
-        RestTextChannel newTextChannel = await socketGuild
-            .CreateTextChannelAsync(instanceId, props => props.CategoryId = categoryChannel.Id);
-
-        _logger.LogInformation($"Created new TextChannel with ID: {newTextChannel.Id}");
-
-        await _discordChannelRegistry.AddOrUpdateChannelAsync(
-                instanceId: instanceId,
-                displayName: System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(instanceId),
-                channelId: newTextChannel.Id.ToString()
-            );
-    }
-
-    public async Task OnInstanceUninstalledAsync(ulong guildId, string instanceId)
-    {
-        if (_discordClient.GetGuild(guildId) is not SocketGuild socketGuild)
-        {
-            _logger.LogError($"Failed to load guild with ID: {guildId}");
-            return;
-        }
-
-        string discordChannelId = _configuration[$"games:{instanceId}:channelId"] ?? string.Empty;
-
-        if (discordChannelId == string.Empty)
-        {
-            _logger.LogError($"Failed to get discordChannelId for game: {instanceId}");
-            return;
-        }
-
-        var textChannel = socketGuild.TextChannels.FirstOrDefault(
-                channel => channel.Id == ulong.Parse(discordChannelId));
-
-        if (textChannel is null)
-        {
-            _logger.LogError($"Failed to load text channel with name: {instanceId}");
-            return;
-        }
-
-        await textChannel.DeleteAsync();
-        await _discordChannelRegistry.RemoveChannelAsync(instanceId);
-
-        _logger.LogInformation($"Deleted TextChannel '{instanceId}' with ID: {textChannel.Id}");
     }
 }

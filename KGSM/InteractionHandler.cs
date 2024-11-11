@@ -2,7 +2,6 @@
 using Discord.Interactions;
 using Discord.WebSocket;
 
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 using System.Reflection;
@@ -14,19 +13,19 @@ public class InteractionHandler
     private readonly DiscordSocketClient _client;
     private readonly InteractionService _handler;
     private readonly IServiceProvider _services;
-    private readonly IConfiguration _configuration;
+    private readonly AppSettingsManager _settingsManager;
 
     public InteractionHandler(
         DiscordSocketClient client,
         InteractionService handler,
         IServiceProvider services,
-        IConfiguration config
+        AppSettingsManager settingsManager
     )
     {
         _client = client;
         _handler = handler;
         _services = services;
-        _configuration = config;
+        _settingsManager = settingsManager;
     }
 
     public async Task InitializeAsync()
@@ -34,12 +33,6 @@ public class InteractionHandler
         // Process when the client is ready, so we can register our commands.
         _client.Ready += ReadyAsync;
         _handler.Log += LogAsync;
-
-        // Register type converters
-        _handler.AddTypeConverter(
-            typeof(Domain.Game),
-            _services.GetRequiredService<GameTypeConverter>()
-        );
 
         // Add the public modules that inherit InteractionModuleBase<T> to the
         // InteractionService
@@ -67,7 +60,7 @@ public class InteractionHandler
         // await _handler.RegisterCommandsGloballyAsync();
 
         await _handler.RegisterCommandsToGuildAsync(
-            ulong.Parse(_configuration["discord:guildId"] ?? string.Empty),
+            ulong.Parse(_settingsManager.Settings.Discord.GuildId ?? string.Empty),
             true
         );
     }

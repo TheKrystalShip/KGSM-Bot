@@ -1,9 +1,6 @@
-﻿using Discord;
-using Discord.Interactions;
+﻿using Discord.Interactions;
 
 using System.Text.RegularExpressions;
-
-using Game = TheKrystalShip.KGSM.Domain.Game;
 
 using TheKrystalShip.KGSM.Services;
 
@@ -16,13 +13,13 @@ public partial class BlueprintsModule : InteractionModuleBase<SocketInteractionC
 {
 
     private readonly KgsmInterop _interop;
-    private readonly DiscordNotifier _discordNotifier;
+    private readonly DiscordChannelRegistry _discordChannelRegistry;
     private readonly Logger<BlueprintsModule> _logger;
 
     // Constructor injection is also a valid way to access the dependencies
-    public BlueprintsModule(DiscordNotifier discordNotifier, KgsmInterop interop)
+    public BlueprintsModule(DiscordChannelRegistry discordChannelRegistry, KgsmInterop interop)
     {
-        _discordNotifier = discordNotifier;
+        _discordChannelRegistry = discordChannelRegistry;
         _interop = interop;
         _logger = new();
     }
@@ -46,7 +43,7 @@ public partial class BlueprintsModule : InteractionModuleBase<SocketInteractionC
             );
 
         if (result.ExitCode == 0) {
-            string message = "Uninstall successful";
+            string message = "Installation successful";
 
             if (result.Stdout != string.Empty)
                 message = result.Stdout;
@@ -57,7 +54,7 @@ public partial class BlueprintsModule : InteractionModuleBase<SocketInteractionC
 
             if (match.Success) {
                 string instanceId = match.Groups[1].Value;
-                await _discordNotifier.OnInstanceInstalledAsync(Context.Guild.Id, instanceId);
+                await _discordChannelRegistry.AddOrUpdateChannelAsync(Context.Guild.Id, blueprint, instanceId);
             }
 
             await FollowupAsync(result.Stderr ?? result.Stdout);

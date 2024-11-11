@@ -2,7 +2,6 @@
 using Discord.Interactions;
 using Discord.WebSocket;
 
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 using TheKrystalShip.KGSM.Services;
@@ -12,9 +11,7 @@ namespace TheKrystalShip.KGSM;
 
 public class Program
 {
-    private static bool _useRabbitMq = false;
-
-    private IConfiguration _configuration;
+    private AppSettingsManager _settingsManager;
     private IServiceProvider _services;
 
     private readonly Logger<Program> _logger = new();
@@ -36,19 +33,14 @@ public class Program
 
     public async Task RunAsync(string[] args)
     {
-        if (args.Contains("--rabbitmq"))
-            _useRabbitMq = true;
+        _settingsManager = new("appsettings.json");
 
-        _configuration = new ConfigurationBuilder()
-            .AddEnvironmentVariables()
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-            .Build();
+        string kgsmPath = _settingsManager.Settings.KgsmPath;
 
-        string? kgsmPath = _configuration["kgsmPath"] ??
+        if (kgsmPath == string.Empty)
             throw new Exception("\"kgsmPath\" not set in appsettings.json");
 
         var serviceCollection = new ServiceCollection()
-            .AddSingleton(_configuration)
             .AddSingleton(_socketConfig)
             .AddSingleton<DiscordSocketClient>()
             .AddSingleton(x => new InteractionService(
@@ -56,18 +48,11 @@ public class Program
                 _interactionServiceConfig
             ))
             .AddSingleton<InteractionHandler>()
-            .AddSingleton<GameTypeConverter>()
             .AddSingleton<DiscordNotifier>()
             .AddSingleton<DiscordChannelRegistry>()
-            .AddSingleton(x => new KgsmInterop(kgsmPath));
-
-        if (_useRabbitMq)
-        {
-            _logger.LogInformation("Using RabbitMQ");
-            serviceCollection.AddSingleton(
-                new RabbitMQClient(_configuration["rabbitmq:uri"] ?? string.Empty)
-            );
-        }
+            .AddSingleton<WatchdogNotifier>()
+            .AddSingleton(x => new KgsmInterop(kgsmPath))
+            .AddSingleton(x => new AppSettingsManager("appsettings.json"));
 
         _services = serviceCollection.BuildServiceProvider();
 
@@ -86,22 +71,8 @@ public class Program
             await discordClient.SetGameAsync("over servers 👀", null, ActivityType.Watching);
         };
 
-        await discordClient.LoginAsync(TokenType.Bot, _configuration["discord:token"]);
+        await discordClient.LoginAsync(TokenType.Bot, _settingsManager.Settings.Discord.Token);
         await discordClient.StartAsync();
-
-        if (_useRabbitMq)
-        {
-            var rabbitMqClient = _services.GetRequiredService<RabbitMQClient>();
-            var discordNotifier = _services.GetRequiredService<DiscordNotifier>();
-            rabbitMqClient.StatusChangeReceived += discordNotifier.OnRunningStatusUpdated;
-
-            if (await rabbitMqClient.LoginAsync())
-            {
-                await rabbitMqClient.StartAsync(
-                    _configuration["rabbitmq:routingKey"] ?? string.Empty
-                );
-            }
-        }
 
         // Never quit the program until manually forced to.
         await Task.Delay(Timeout.Infinite);

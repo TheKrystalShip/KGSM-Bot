@@ -1,4 +1,4 @@
-namespace TheKrystalShip.KGSM;
+﻿namespace TheKrystalShip.KGSM;
 
 public enum RunningStatus
 {
