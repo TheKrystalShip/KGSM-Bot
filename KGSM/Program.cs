@@ -2,6 +2,8 @@
 using Discord.Interactions;
 using Discord.WebSocket;
 
+using System.Linq;
+
 using Microsoft.Extensions.DependencyInjection;
 
 using TheKrystalShip.KGSM.Services;
@@ -69,10 +71,19 @@ public class Program
         discordClient.Ready += async () =>
         {
             await discordClient.SetGameAsync("over servers 👀", null, ActivityType.Watching);
+        
+            var appSettings = _services.GetRequiredService<AppSettingsManager>();
+            var watchdogNotifier = _services.GetRequiredService<WatchdogNotifier>();
+        
+            foreach (var kvpair in appSettings.Settings.Instances)
+            {
+               watchdogNotifier.StartMonitoring(kvpair.Key); 
+            }
         };
 
         await discordClient.LoginAsync(TokenType.Bot, _settingsManager.Settings.Discord.Token);
         await discordClient.StartAsync();
+
 
         // Never quit the program until manually forced to.
         await Task.Delay(Timeout.Infinite);

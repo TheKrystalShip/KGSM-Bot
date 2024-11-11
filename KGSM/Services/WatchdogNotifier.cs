@@ -74,7 +74,7 @@ public class WatchdogNotifier
         var processStartInfo = new ProcessStartInfo()
         {
             FileName = kgsmPath,
-            Arguments = $"--instance {instanceId} --logs --follow",
+            Arguments = $"--instance {instanceId} --logs",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
@@ -88,12 +88,15 @@ public class WatchdogNotifier
         bool previousStatus = false;
         bool currentStatus = previousStatus;
 
-        while (!cancellationToken.IsCancellationRequested)
+        while (!cancellationToken.IsCancellationRequested && !process.HasExited)
         {
             var output = await process.StandardOutput.ReadLineAsync();
             
             if (output == null)
+            {
+                await Task.Delay(1000, cancellationToken);
                 continue;
+            }
 
             if (output.Contains(onlineTrigger))
             {
