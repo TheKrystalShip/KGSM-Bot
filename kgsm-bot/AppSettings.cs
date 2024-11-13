@@ -3,6 +3,7 @@
 public class AppSettings
 {
     public string KgsmPath { get; set; } = "";
+    public string KgsmSocketPath { get; set; } = "";
     public DiscordSettings Discord { get; set; } = new();
     public Dictionary<string, BlueprintSettings> Blueprints { get; set; } = new();
     public Dictionary<string, InstanceSettings> Instances { get; set; } = new();
