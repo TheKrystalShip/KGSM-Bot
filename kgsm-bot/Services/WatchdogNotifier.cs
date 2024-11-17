@@ -88,7 +88,15 @@ public class WatchdogNotifier
         };
 
         using var process = new Process { StartInfo = processStartInfo };
+        process.OutputDataReceived += async (sender, e) =>
+            await HandleOutputAsync(instanceId, e.Data, onlineTrigger, offlineTrigger);
+        
+        process.ErrorDataReceived += (sender, e) =>
+            _logger.LogError($"Instance {instanceId} error: {e.Data}");
+
         process.Start();
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
 
         // Assume instance is offline initially
         bool previousStatus = false;
@@ -96,32 +104,7 @@ public class WatchdogNotifier
 
         while (!cancellationToken.IsCancellationRequested && !process.HasExited)
         {
-            var output = await process.StandardOutput.ReadLineAsync();
-            
-            if (output == null)
-            {
-                await Task.Delay(1000, cancellationToken);
-                continue;
-            }
-
-            if (output.Contains(onlineTrigger))
-            {
-                currentStatus = true;
-            }
-            else if (output.Contains(offlineTrigger))
-            {
-                currentStatus = false;
-            }
-
-            if (currentStatus != previousStatus)
-            {
-                previousStatus = currentStatus;
-
-                _logger.LogInformation($"Instance {instanceId} status changed: {(currentStatus ? "Online" : "Offline")}");
-                var rsua = new RunningStatusUpdatedArgs(new(instanceId), currentStatus ? RunningStatus.Online : RunningStatus.Offline);
-
-                await _discordNotifier.OnRunningStatusUpdated(rsua);
-            }
+            await Task.Delay(500, cancellationToken);
         }
 
         if (!process.HasExited)
@@ -130,5 +113,34 @@ public class WatchdogNotifier
         }
 
         _logger.LogInformation($"Monitoring thread for Instance: {instanceId} has exited");
+    }
+
+    private async Task HandleOutputAsync(string instanceId, string? output, string onlineTrigger, string offlineTrigger)
+    {
+        if (output == null)
+            return;
+
+        // Assume instance is offline initially
+        bool previousStatus = false;
+        bool currentStatus = previousStatus;
+
+        // Trigger check
+        if (output.Contains(onlineTrigger))
+        {
+            currentStatus = true;
+        }
+        else if (output.Contains(offlineTrigger))
+        {
+            currentStatus = false;
+        }
+
+        if (currentStatus != previousStatus)
+        {
+            previousStatus = currentStatus;
+            _logger.LogInformation($"Instance {instanceId} status changed: {(currentStatus ? "Online" : "Offline")}");
+            
+            var rsua = new RunningStatusUpdatedArgs(new(instanceId), currentStatus ? RunningStatus.Online : RunningStatus.Offline);
+            await _discordNotifier.OnRunningStatusUpdated(rsua);
+        }
     }
 }
