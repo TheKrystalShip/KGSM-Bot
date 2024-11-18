@@ -11,7 +11,6 @@ namespace TheKrystalShip.KGSM.Modules;
 // Interaction modules must be public and inherit from an IInteractionModuleBase
 public partial class BlueprintsModule : InteractionModuleBase<SocketInteractionContext>
 {
-
     private readonly KgsmInterop _interop;
     private readonly DiscordChannelRegistry _discordChannelRegistry;
     private readonly Logger<BlueprintsModule> _logger;

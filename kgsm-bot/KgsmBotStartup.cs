@@ -1,5 +1,4 @@
-﻿
-using Discord;
+﻿using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 
@@ -78,9 +77,6 @@ public class KgsmBotStartup
         discordClient.Ready += async () =>
         {
             await discordClient.SetGameAsync("over servers 👀", null, ActivityType.Watching);
-        
-            var appSettings = services.GetRequiredService<AppSettingsManager>();
-            var watchdogNotifier = services.GetRequiredService<WatchdogNotifier>();
         
             services.GetRequiredService<KgsmEventListener>()
                 .Initialize(kgsmSocketPath);

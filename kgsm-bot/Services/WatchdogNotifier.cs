@@ -30,30 +30,18 @@ public class WatchdogNotifier
             return;
         }
 
-        var triggers = _settingsManager.GetTrigger(instanceId);
+        var trigger = _settingsManager.GetTrigger(instanceId);
 
-        if (triggers == null)
+        if (trigger == null)
         {
             _logger.LogError($"Triggers for instance: {instanceId} is null");
             return;
         }
         
-        if (triggers.OnlineTrigger == string.Empty)
-        {
-            _logger.LogError($"OnlineTrigger for {instanceId} is empty, aborting");
-            return;
-        }
-        
-        if (triggers.OfflineTrigger == string.Empty)
-        {
-            _logger.LogError($"OfflineTrigger for {instanceId} is empty, aborting");
-            return;
-        }
-
         var cts = new CancellationTokenSource();
         _serviceThreads[instanceId] = cts;
 
-        Task.Run(() => MonitorInstanceAsync(instanceId, triggers.OnlineTrigger, triggers.OfflineTrigger, cts.Token));
+        Task.Run(() => MonitorInstanceAsync(instanceId, trigger, cts.Token));
         _logger.LogInformation($"Started monitoring instance: {instanceId}");
     }
 
@@ -70,7 +58,7 @@ public class WatchdogNotifier
         }
     }
 
-    private async Task MonitorInstanceAsync(string instanceId, string onlineTrigger, string offlineTrigger, CancellationToken cancellationToken)
+    private async Task MonitorInstanceAsync(string instanceId, string onlineTrigger, CancellationToken cancellationToken)
     {
         string kgsmPath = _settingsManager.Settings.KgsmPath ?? string.Empty;
 
@@ -89,7 +77,7 @@ public class WatchdogNotifier
 
         using var process = new Process { StartInfo = processStartInfo };
         process.OutputDataReceived += async (sender, e) =>
-            await HandleOutputAsync(instanceId, e.Data, onlineTrigger, offlineTrigger);
+            await HandleOutputAsync(instanceId, e.Data, onlineTrigger);
         
         process.ErrorDataReceived += (sender, e) =>
             _logger.LogError($"Instance {instanceId} error: {e.Data}");
@@ -97,10 +85,6 @@ public class WatchdogNotifier
         process.Start();
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
-
-        // Assume instance is offline initially
-        bool previousStatus = false;
-        bool currentStatus = previousStatus;
 
         while (!cancellationToken.IsCancellationRequested && !process.HasExited)
         {
@@ -115,32 +99,18 @@ public class WatchdogNotifier
         _logger.LogInformation($"Monitoring thread for Instance: {instanceId} has exited");
     }
 
-    private async Task HandleOutputAsync(string instanceId, string? output, string onlineTrigger, string offlineTrigger)
+    private async Task HandleOutputAsync(string instanceId, string? output, string onlineTrigger)
     {
-        if (output == null)
+        if (output == null || !output.Contains(onlineTrigger))
             return;
 
-        // Assume instance is offline initially
-        bool previousStatus = false;
-        bool currentStatus = previousStatus;
+        _logger.LogInformation($"Instance {instanceId} started");
+        
+        var rsua = new RunningStatusUpdatedArgs(new(instanceId), RunningStatus.Online);
+        await _discordNotifier.OnRunningStatusUpdated(rsua);
 
-        // Trigger check
-        if (output.Contains(onlineTrigger))
-        {
-            currentStatus = true;
-        }
-        else if (output.Contains(offlineTrigger))
-        {
-            currentStatus = false;
-        }
-
-        if (currentStatus != previousStatus)
-        {
-            previousStatus = currentStatus;
-            _logger.LogInformation($"Instance {instanceId} status changed: {(currentStatus ? "Online" : "Offline")}");
-            
-            var rsua = new RunningStatusUpdatedArgs(new(instanceId), currentStatus ? RunningStatus.Online : RunningStatus.Offline);
-            await _discordNotifier.OnRunningStatusUpdated(rsua);
-        }
+        // Once the instance has been marked as "started" the watchdog doesn't
+        // need to do anything else, so it can shutdown.
+        StopMonitoring(instanceId);
     }
 }

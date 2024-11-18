@@ -60,7 +60,7 @@ public class InteractionHandler
         // await _handler.RegisterCommandsGloballyAsync();
 
         await _handler.RegisterCommandsToGuildAsync(
-            ulong.Parse(_settingsManager.Settings.Discord.GuildId ?? string.Empty),
+            _settingsManager.Settings.Discord.GuildId,
             true
         );
     }

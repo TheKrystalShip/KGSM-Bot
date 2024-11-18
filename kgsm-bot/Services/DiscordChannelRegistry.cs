@@ -8,27 +8,19 @@ namespace TheKrystalShip.KGSM.Services;
 public class DiscordChannelRegistry
 {
     private readonly DiscordSocketClient _discordClient;
-    private readonly WatchdogNotifier _watchdogNotifier;
     private readonly Logger<DiscordChannelRegistry> _logger;
     private readonly AppSettingsManager _settingsManager;
 
-    public DiscordChannelRegistry(DiscordSocketClient discordClient, WatchdogNotifier watchdogNotifier, AppSettingsManager settingsManager)
+    public DiscordChannelRegistry(DiscordSocketClient discordClient, AppSettingsManager settingsManager)
     {
         _discordClient = discordClient;
-        _watchdogNotifier = watchdogNotifier;
         _logger = new();
         _settingsManager = settingsManager;
     }
 
     public async Task AddOrUpdateChannelAsync(ulong guildId, string blueprint, string instanceId)
     {
-        string instancesCategoryId = _settingsManager.Discord.InstancesCategoryId ?? string.Empty;
-
-        if (instancesCategoryId == string.Empty)
-        {
-            _logger.LogError($"Failed to get instancesCategoryId from config file");
-            return;
-        }
+        ulong instancesCategoryId = _settingsManager.Discord.InstancesCategoryId;
 
         if (_discordClient.GetGuild(guildId) is not SocketGuild socketGuild)
         {
@@ -36,10 +28,7 @@ public class DiscordChannelRegistry
             return;
         }
 
-        if (
-                socketGuild.GetCategoryChannel(ulong.Parse(instancesCategoryId))
-                is not SocketCategoryChannel categoryChannel
-            )
+        if (socketGuild.GetCategoryChannel(instancesCategoryId) is not SocketCategoryChannel categoryChannel)
         {
             _logger.LogError($"Failed to load category channel with ID: {instancesCategoryId}");
             return;
@@ -59,8 +48,6 @@ public class DiscordChannelRegistry
         _settingsManager.AddOrUpdateInstance(instanceId, instanceSettings);
 
         _logger.LogInformation($"Added - {instanceSettings}");
-
-        _watchdogNotifier.StartMonitoring(instanceId);
     }
 
     public async Task RemoveChannelAsync(ulong guildId, string instanceId)
@@ -93,7 +80,5 @@ public class DiscordChannelRegistry
         _settingsManager.RemoveInstance(instanceId);
         
         _logger.LogInformation($"Removed - Channel: {instanceId}, ID: {textChannel.Id}");
-
-        _watchdogNotifier.StopMonitoring(instanceId);
     }
 }

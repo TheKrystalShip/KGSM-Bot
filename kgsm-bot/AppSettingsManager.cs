@@ -68,7 +68,7 @@ public class AppSettingsManager
         };
     }
 
-    public BlueprintSettings? GetTrigger(string instanceId)
+    public string? GetTrigger(string instanceId)
     {
         if (!Settings.Instances.ContainsKey(instanceId))
         {
@@ -90,7 +90,7 @@ public class AppSettingsManager
             return null;
         }
 
-        return Settings.Blueprints[instanceBlueprint];
+        return Settings.Blueprints[instanceBlueprint].OnlineTrigger;
     }
 
     public InstanceSettings? GetInstance(string instanceId)

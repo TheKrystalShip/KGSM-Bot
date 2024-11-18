@@ -12,8 +12,8 @@ public class AppSettings
 public class DiscordSettings
 {
     public string Token { get; set; } = "";
-    public string GuildId { get; set; } = "";
-    public string InstancesCategoryId { get; set; } = "";
+    public ulong GuildId { get; set; }
+    public ulong InstancesCategoryId { get; set; }
     public StatusSettings Status { get; set; } = new();
 }
 
@@ -29,7 +29,6 @@ public class StatusSettings
 public class BlueprintSettings
 {
     public string OnlineTrigger { get; set; } = "";
-    public string OfflineTrigger { get; set; } = "";
 }
 
 public class InstanceSettings
