@@ -60,7 +60,7 @@ public class WatchdogNotifier
 
     private async Task MonitorInstanceAsync(string instanceId, string onlineTrigger, CancellationToken cancellationToken)
     {
-        string kgsmPath = _settingsManager.Settings.KgsmPath ?? string.Empty;
+        string kgsmPath = _settingsManager.Settings.Kgsm.Path ?? string.Empty;
 
         if (kgsmPath == string.Empty)
             throw new ArgumentNullException(nameof(kgsmPath));

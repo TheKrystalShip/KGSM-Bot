@@ -6,16 +6,13 @@ namespace TheKrystalShip.KGSM;
 public class BlueprintAutocompleteHandler : AutocompleteHandler
 {
     private readonly List<string> _blueprints = [];
-    private readonly KgsmInterop _interop;
 
     public BlueprintAutocompleteHandler(KgsmInterop interop)
     {
-        _interop = interop;
-        KgsmResult result = _interop.GetBlueprints();
+        KgsmResult result = interop.GetBlueprints();
 
-        if (result.ExitCode == 0) {
+        if (result.Stdout?.Trim() != string.Empty)
             _blueprints = result.Stdout?.Split('\n').ToList() ?? [];
-        }
     }
 
     public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)

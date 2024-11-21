@@ -2,28 +2,30 @@
 
 public class AppSettings
 {
-    public string KgsmPath { get; set; } = "";
-    public string KgsmSocketPath { get; set; } = "";
     public DiscordSettings Discord { get; set; } = new();
-    public Dictionary<string, BlueprintSettings> Blueprints { get; set; } = new();
-    public Dictionary<string, InstanceSettings> Instances { get; set; } = new();
+    public KgsmSettings Kgsm { get; set; } = new();
 }
 
 public class DiscordSettings
 {
     public string Token { get; set; } = "";
-    public ulong GuildId { get; set; }
-    public ulong InstancesCategoryId { get; set; }
+    public ulong Guild { get; set; } = 0;
+    public ulong InstancesCategoryId { get; set; } = 0;
     public StatusSettings Status { get; set; } = new();
 }
 
 public class StatusSettings
 {
-    public string Uninstalled { get; set; } = "";
     public string Offline { get; set; } = "";
     public string Online { get; set; } = "";
-    public string NeedsUpdate { get; set; } = "";
-    public string Error { get; set; } = "";
+}
+
+public class KgsmSettings
+{
+    public string Path { get; set; } = "";
+    public string SocketPath { get; set; } = "";
+    public Dictionary<string, BlueprintSettings> Blueprints { get; set; } = new();
+    public Dictionary<string, InstanceSettings> Instances { get; set; } = new();
 }
 
 public class BlueprintSettings

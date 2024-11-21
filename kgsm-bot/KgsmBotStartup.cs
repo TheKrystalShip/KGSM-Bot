@@ -36,15 +36,6 @@ public class KgsmBotStartup
     {
         AppSettingsManager settingsManager = new(APP_SETTINGS_FILE);
 
-        string kgsmPath = settingsManager.Settings.KgsmPath;
-        string kgsmSocketPath = settingsManager.Settings.KgsmSocketPath;
-
-        if (kgsmPath == string.Empty)
-            throw new Exception(nameof(settingsManager.Settings.KgsmPath));
-
-        if (kgsmSocketPath == string.Empty)
-            throw new ArgumentNullException(nameof(settingsManager.Settings.KgsmSocketPath));
-
         var serviceCollection = new ServiceCollection()
             .AddSingleton(_socketConfig)
             .AddSingleton(settingsManager)
@@ -58,7 +49,10 @@ public class KgsmBotStartup
             .AddSingleton<DiscordChannelRegistry>()
             .AddSingleton<WatchdogNotifier>()
             .AddSingleton<KgsmEventListener>()
-            .AddSingleton(x => new KgsmInterop(kgsmPath));
+            .AddSingleton(x => new KgsmInterop(
+                settingsManager.Settings.Kgsm.Path,
+                settingsManager.Settings.Kgsm.SocketPath
+            ));
 
         IServiceProvider services = serviceCollection.BuildServiceProvider();
 
@@ -79,7 +73,7 @@ public class KgsmBotStartup
             await discordClient.SetGameAsync("over servers 👀", null, ActivityType.Watching);
         
             services.GetRequiredService<KgsmEventListener>()
-                .Initialize(kgsmSocketPath);
+                .Initialize();
         };
 
         await discordClient.LoginAsync(TokenType.Bot, settingsManager.Settings.Discord.Token);

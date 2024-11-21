@@ -59,10 +59,12 @@ public class InteractionHandler
         // to register commands to a specific guild.
         // await _handler.RegisterCommandsGloballyAsync();
 
-        await _handler.RegisterCommandsToGuildAsync(
-            _settingsManager.Settings.Discord.GuildId,
-            true
-        );
+        await _handler.RegisterCommandsGloballyAsync();
+
+        //await _handler.RegisterCommandsToGuildAsync(
+        //    _settingsManager.Settings.Discord.GuildId,
+        //    true
+        //);
     }
 
     private async Task HandleInteraction(SocketInteraction interaction)

@@ -1,7 +1,5 @@
 ﻿using Discord.Interactions;
 
-using System.Text.RegularExpressions;
-
 using TheKrystalShip.KGSM.Services;
 
 using TheKrystalShip.Logging;
@@ -48,15 +46,8 @@ public partial class BlueprintsModule : InteractionModuleBase<SocketInteractionC
                 message = result.Stdout;
             if (result.Stderr != string.Empty)
                 message = result.Stderr;
-            string pattern = @"Instance\s+(.+?)\s+has";
-            Match match = Regex.Match(message, pattern);
 
-            if (match.Success) {
-                string instanceId = match.Groups[1].Value;
-                await _discordChannelRegistry.AddOrUpdateChannelAsync(Context.Guild.Id, blueprint, instanceId);
-            }
-
-            await FollowupAsync(result.Stderr ?? result.Stdout);
+            await FollowupAsync(message);
         }
         else
         { 

@@ -1,127 +1,69 @@
-﻿using System;
-using System.Text.Json;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 using TheKrystalShip.KGSM.Domain;
 
+using TheKrystalShip.KGSM.Lib;
 using TheKrystalShip.Logging;
 
 namespace TheKrystalShip.KGSM.Services;
 
 public class KgsmEventListener
 {
-    private readonly UnixSocketClient _client;
+    private readonly KgsmInterop _interop;
     private readonly WatchdogNotifier _watchdogNotifier;
     private readonly DiscordChannelRegistry _discordChannelRegistry;
     private readonly DiscordNotifier _discordNotifier;
     private readonly AppSettingsManager _settingsManager;
     private readonly Logger<KgsmEventListener> _logger;
-    private readonly CancellationTokenSource _cts;
 
-    private readonly Dictionary<string, Type> _eventTypeMapping = new()
-    {
-        { "instance_installed", typeof(InstanceInstalledData) },
-        { "instance_started", typeof(InstanceStartedData) },
-        { "instance_stopped", typeof(InstanceStoppedData) },
-        { "instance_uninstalled", typeof(InstanceUninstalledData) }
-    };
-
-    public KgsmEventListener(WatchdogNotifier watchdogNotifier, DiscordChannelRegistry discordChannelRegistry, AppSettingsManager settingsManager, DiscordNotifier discordNotifier)
+    public KgsmEventListener(
+            WatchdogNotifier watchdogNotifier,
+            DiscordChannelRegistry discordChannelRegistry,
+            AppSettingsManager settingsManager,
+            DiscordNotifier discordNotifier,
+            KgsmInterop interop
+        )
     {
         _watchdogNotifier = watchdogNotifier;
         _discordChannelRegistry = discordChannelRegistry;
         _settingsManager = settingsManager;
         _discordNotifier = discordNotifier;
-        _client = new();
+        _interop = interop;
         _logger = new();
-        _cts = new();
     }
 
-    ~KgsmEventListener()
+    public void Initialize()
     {
-        _cts.Cancel();
+        _interop.Events.RegisterHandler<InstanceInstalledData>(OnInstanceInstalledAsync);
+        _interop.Events.RegisterHandler<InstanceStartedData>(OnInstanceStartedAsync);
+        _interop.Events.RegisterHandler<InstanceStoppedData>(OnInstanceStoppedAsync);
+        _interop.Events.RegisterHandler<InstanceUninstalledData>(OnInstanceUninstalledAsync);
+
+        _logger.LogInformation($"Registered event handlers");
     }
 
-    public void Initialize(string socketPath)
+    private async Task OnInstanceInstalledAsync(InstanceInstalledData installedData)
     {
-        _client.EventReceived += OnEventReceivedAsync;
-        Task.Run(() => _client.StartListeningAsync(socketPath, _cts.Token));
+        await _discordChannelRegistry.AddOrUpdateChannelAsync(
+            _settingsManager.Discord.Guild,
+            installedData.Blueprint,
+            installedData.InstanceId
+        );
     }
 
-    private EventDataBase DeserializeEventData(string eventType, JsonElement dataElement)
+    private async Task OnInstanceStartedAsync(InstanceStartedData startedData)
     {
-        if (_eventTypeMapping.TryGetValue(eventType, out Type? targetType))
-        {
-            if (targetType == null)
-                throw new InvalidOperationException($"Unknown event type {eventType}");
-
-            var deserializationResult = JsonSerializer
-                .Deserialize(dataElement.GetRawText(), targetType) as EventDataBase;
-
-            if (deserializationResult == null)
-                throw new InvalidOperationException($"Unknown event type {eventType}");
-
-            return deserializationResult;
-        }
-
-        throw new InvalidOperationException($"Unknown event type: {eventType}");
-    }
-
-    private async Task OnEventReceivedAsync(string message)
-    {
-        _logger.LogInformation($"Received event: {message}");
-
-        try
-        {
-            // Deserialize the outer wrapper
-            var eventWrapper = JsonSerializer.Deserialize<EventWrapper>(message);
-
-            if (eventWrapper == null || string.IsNullOrWhiteSpace(eventWrapper.EventType))
-            {
-                _logger.LogError("Invalid event received, missing EventType.");
-                return;
-            }
-
-            // Deserialize the Data based on the EventType
-            var eventData = DeserializeEventData(eventWrapper.EventType, eventWrapper.Data);
-
-            switch (eventData)
-            {
-                case InstanceInstalledData installedData:
-                    _logger.LogInformation($"Instance installed with ID: {installedData.InstanceId}, blueprint: {installedData.Blueprint}");
-                    // Handle instance_created event
-                    await _discordChannelRegistry.AddOrUpdateChannelAsync(
-                            _settingsManager.Discord.GuildId,
-                            installedData.Blueprint,
-                            installedData.InstanceId
-                        );
-                    break;
-
-                case InstanceStartedData startedData:
-                    _logger.LogInformation($"Instance started with ID: {startedData.InstanceId}");
-                    _watchdogNotifier.StartMonitoring(startedData.InstanceId);
-                    break;
-
-                case InstanceStoppedData stoppedData:
-                    _logger.LogInformation($"Instance stopped with ID: {stoppedData.InstanceId}");
-                    await _discordNotifier.OnRunningStatusUpdated(new(stoppedData.InstanceId, RunningStatus.Offline));
-                    break;
-
-                case InstanceUninstalledData uninstalledData:
-                    _logger.LogInformation($"Instance uninstalled with ID: {uninstalledData.InstanceId}");
-                    await _discordChannelRegistry.RemoveChannelAsync(_settingsManager.Discord.GuildId, uninstalledData.InstanceId);
-                    break;
-
-                default:
-                    _logger.LogError($"Unhandled event type: {eventWrapper.EventType}");
-                    break;
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error processing event message.");
-        }
-
+        _watchdogNotifier.StartMonitoring(startedData.InstanceId);
         await Task.CompletedTask;
+    }
+
+    private async Task OnInstanceStoppedAsync(InstanceStoppedData stoppedData)
+    {
+        await _discordNotifier.OnRunningStatusUpdated(new(stoppedData.InstanceId, RunningStatus.Offline));
+    }
+
+    private async Task OnInstanceUninstalledAsync(InstanceUninstalledData uninstalledData)
+    {
+        await _discordChannelRegistry.RemoveChannelAsync(_settingsManager.Discord.Guild, uninstalledData.InstanceId);
     }
 }

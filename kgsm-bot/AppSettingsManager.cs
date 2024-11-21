@@ -12,8 +12,8 @@ public class AppSettingsManager
     private readonly Logger<AppSettingsManager> _logger;
     public AppSettings Settings { get; private set; }
     public DiscordSettings Discord { get => Settings.Discord; }
-    public Dictionary<string, InstanceSettings> Instances { get => Settings.Instances; }
-    public Dictionary<string, BlueprintSettings> Blueprints { get => Settings.Blueprints; }
+    public Dictionary<string, InstanceSettings> Instances { get => Settings.Kgsm.Instances; }
+    public Dictionary<string, BlueprintSettings> Blueprints { get => Settings.Kgsm.Blueprints; }
 
     public AppSettingsManager(string configFilePath)
     {
@@ -28,7 +28,9 @@ public class AppSettingsManager
 
         // Bind the configuration to the AppSettings model
         Settings = new AppSettings();
-        _configuration.Bind(Settings);
+        _configuration.Bind(Settings, options => {
+            options.ErrorOnUnknownConfiguration = true;
+        });
     }
 
     /// <summary>
@@ -36,7 +38,7 @@ public class AppSettingsManager
     /// </summary>
     public void AddOrUpdateInstance(string key, InstanceSettings instance)
     {
-        Settings.Instances[key] = instance;
+        Settings.Kgsm.Instances[key] = instance;
         SaveSettings();
     }
 
@@ -45,13 +47,13 @@ public class AppSettingsManager
     /// </summary>
     public void RemoveInstance(string key)
     {
-        if (!Settings.Instances.ContainsKey(key))
+        if (!Settings.Kgsm.Instances.ContainsKey(key))
         {
             _logger.LogError($"Instance {key} not in memory, nothing to remove");
             return;
         }
         
-        Settings.Instances.Remove(key);
+        Settings.Kgsm.Instances.Remove(key);
         SaveSettings();
     }
 
@@ -61,22 +63,19 @@ public class AppSettingsManager
         {
             RunningStatus.Online => Settings.Discord.Status.Online,
             RunningStatus.Offline => Settings.Discord.Status.Offline,
-            RunningStatus.Error => Settings.Discord.Status.Error,
-            RunningStatus.NeedsUpdate => Settings.Discord.Status.NeedsUpdate,
-            RunningStatus.Uninstalled => Settings.Discord.Status.Uninstalled,
             _ => string.Empty
         };
     }
 
     public string? GetTrigger(string instanceId)
     {
-        if (!Settings.Instances.ContainsKey(instanceId))
+        if (!Settings.Kgsm.Instances.ContainsKey(instanceId))
         {
             _logger.LogError($"Instance {instanceId} not in memory");
             return null;
         }
 
-        string instanceBlueprint = Settings.Instances[instanceId].Blueprint;
+        string instanceBlueprint = Settings.Kgsm.Instances[instanceId].Blueprint;
 
         if (instanceBlueprint == string.Empty)
         {
@@ -84,24 +83,24 @@ public class AppSettingsManager
             return null;
         }
 
-        if (!Settings.Blueprints.ContainsKey(instanceBlueprint))
+        if (!Settings.Kgsm.Blueprints.ContainsKey(instanceBlueprint))
         {
             _logger.LogError($"Blueprint {instanceBlueprint} not in memory");
             return null;
         }
 
-        return Settings.Blueprints[instanceBlueprint].OnlineTrigger;
+        return Settings.Kgsm.Blueprints[instanceBlueprint].OnlineTrigger;
     }
 
     public InstanceSettings? GetInstance(string instanceId)
     {
-        if (!Settings.Instances.ContainsKey(instanceId))
+        if (!Settings.Kgsm.Instances.ContainsKey(instanceId))
         {
             _logger.LogError($"Instance {instanceId} not in memory");
             return null;
         }
 
-        return Settings.Instances[instanceId];
+        return Settings.Kgsm.Instances[instanceId];
     }
 
     /// <summary>

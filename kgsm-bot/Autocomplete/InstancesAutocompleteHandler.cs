@@ -1,37 +1,22 @@
 ﻿using Discord;
 using Discord.Interactions;
 
-using TheKrystalShip.Logging;
-
 namespace TheKrystalShip.KGSM;
 
 public class InstancesAutocompleteHandler : AutocompleteHandler
 {
     private List<string> _instances = [];
-    private Logger<InstancesAutocompleteHandler> _logger;
 
-    public InstancesAutocompleteHandler()
+    public InstancesAutocompleteHandler(KgsmInterop interop)
     {
-        _logger = new();
+        KgsmResult result = interop.GetInstances();
+        
+        if (result.Stdout?.Trim() != string.Empty)
+            _instances = result.Stdout?.Split('\n').ToList() ?? [];
     }
 
     public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
     {
-        var _interop = services.GetService(typeof(KgsmInterop)) as KgsmInterop ??
-            throw new ArgumentNullException("Required KgsmInterop service not found");
-
-        if (_interop is null)
-        {
-            string errorMessage = "Required service KgsmInterop not found";
-            _logger.LogError(errorMessage);
-            return AutocompletionResult.FromError(new Exception(errorMessage));
-        }
-
-        KgsmResult result = _interop.GetInstances();
-        
-        if (result.Stdout?.Trim() != string.Empty)
-            _instances = result.Stdout?.Split('\n').ToList() ?? [];
-
         // Parameterless AutocompletionResult.FromSuccess() will display
         // "No options match your search." to the user
         if (_instances.Count == 0)
