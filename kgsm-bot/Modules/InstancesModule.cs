@@ -1,8 +1,6 @@
 ﻿using Discord;
 using Discord.Interactions;
 
-using System.Text.RegularExpressions;
-
 using TheKrystalShip.KGSM.Services;
 
 using TheKrystalShip.Logging;
@@ -129,6 +127,20 @@ public partial class InstancesModule : InteractionModuleBase<SocketInteractionCo
         await FollowupAsync(embed: embedBuilder.Build());
     }
 
+    [SlashCommand("input", "Send a command to the game server instance")]
+    public async Task InputAsync(
+        [Summary(description: SUMMARY)]
+        [Autocomplete(typeof(InstancesAutocompleteHandler))]
+        string instance,
+        [Summary("Command to send to the server")]
+        [Discord.Commands.Remainder]
+        string command
+    )
+    {
+        KgsmResult result = _interop.AdHoc("-i", instance, "--input", $"'{command}'");
+        await Task.CompletedTask;
+    }
+
     [SlashCommand("uninstall", "Uninstall a game server")]
     public async Task UninstallAsync(
         [Summary(description: SUMMARY)]
@@ -147,14 +159,6 @@ public partial class InstancesModule : InteractionModuleBase<SocketInteractionCo
                 message = result.Stdout;
             if (result.Stderr != string.Empty)
                 message = result.Stderr;
-
-            string pattern = @"Instance\s+(.+?)\s+uninstalled";
-            Match match = Regex.Match(message, pattern);
-
-            if (match.Success) {
-                string instanceId = match.Groups[1].Value;
-                await _discordChannelRegistry.RemoveChannelAsync(Context.Guild.Id, instanceId);
-            }
 
             await FollowupAsync(message);
         } else {

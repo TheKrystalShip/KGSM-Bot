@@ -2,8 +2,6 @@
 using Discord.Interactions;
 using Discord.WebSocket;
 
-using System.Linq;
-
 using Microsoft.Extensions.DependencyInjection;
 
 using TheKrystalShip.KGSM.Services;
@@ -14,7 +12,7 @@ namespace TheKrystalShip.KGSM;
 public class KgsmBotStartup
 {
     private const string APP_SETTINGS_FILE = "appsettings.json";
-    private readonly Logger<Program> _logger = new();
+    private readonly Logger<KgsmBotStartup> _logger = new();
 
     private readonly DiscordSocketConfig _socketConfig = new()
     {
