@@ -62,6 +62,7 @@ public class KgsmEventListener
 
     private async Task OnInstanceUninstalledAsync(InstanceUninstalledData uninstalledData)
     {
+        await _discordNotifier.OnRunningStatusUpdated(uninstalledData.InstanceId, RunningStatus.Uninstalled);
         await _discordChannelRegistry.RemoveChannelAsync(_settingsManager.Discord.Guild, uninstalledData.InstanceId);
     }
 }

@@ -34,14 +34,23 @@ public class DiscordChannelRegistry
             return;
         }
 
-        RestTextChannel newTextChannel = await socketGuild
-            .CreateTextChannelAsync(instanceId, props => props.CategoryId = categoryChannel.Id);
+        string channelId = string.Empty;
 
-        string channelId = newTextChannel.Id.ToString();
+        if (_settingsManager.Instances.ContainsKey(instanceId))
+        {
+            channelId = _settingsManager.Instances[instanceId].ChannelId;
+        }
+        else
+        {
+            RestTextChannel newTextChannel = await socketGuild
+                .CreateTextChannelAsync(instanceId, props => props.CategoryId = categoryChannel.Id);
+
+            channelId = newTextChannel.Id.ToString();
+        }
 
         InstanceSettings instanceSettings = new()
         {
-            ChannelId = newTextChannel.Id.ToString(),
+            ChannelId = channelId,
             Blueprint = blueprint
         };
 
@@ -74,11 +83,16 @@ public class DiscordChannelRegistry
             _logger.LogError($"Failed to load text channel with name: {instanceId}");
             return;
         }
-
-        await textChannel.DeleteAsync();
         
-        _settingsManager.RemoveInstance(instanceId);
-        
-        _logger.LogInformation($"Removed - Channel: {instanceId}, ID: {textChannel.Id}");
+        if (_settingsManager.Discord.RemoveChannelOnInstanceDeletion)
+        {
+            await textChannel.DeleteAsync();
+            _settingsManager.RemoveInstance(instanceId);
+            _logger.LogInformation($"Removed - Channel: {instanceId}, ID: {textChannel.Id}");
+        }
+        else
+        {
+            _logger.LogInformation($"Preserving Channel: {instanceId}, ID: {textChannel.Id}");
+        }
     }
 }

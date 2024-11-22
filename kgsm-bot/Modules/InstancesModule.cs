@@ -132,8 +132,7 @@ public partial class InstancesModule : InteractionModuleBase<SocketInteractionCo
         [Summary(description: SUMMARY)]
         [Autocomplete(typeof(InstancesAutocompleteHandler))]
         string instance,
-        [Summary("Command to send to the server")]
-        [Discord.Commands.Remainder]
+        [Summary(description: "Command to send to the server")]
         string command
     )
     {

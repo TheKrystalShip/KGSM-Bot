@@ -11,6 +11,7 @@ public class DiscordSettings
     public string Token { get; set; } = "";
     public ulong Guild { get; set; } = 0;
     public ulong InstancesCategoryId { get; set; } = 0;
+    public bool RemoveChannelOnInstanceDeletion { get; set; } = false;
     public StatusSettings Status { get; set; } = new();
 }
 
@@ -18,6 +19,7 @@ public class StatusSettings
 {
     public string Offline { get; set; } = "";
     public string Online { get; set; } = "";
+    public string Uninstalled { get; set; } = "";
 }
 
 public class KgsmSettings

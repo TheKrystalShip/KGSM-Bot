@@ -63,6 +63,7 @@ public class AppSettingsManager
         {
             RunningStatus.Online => Settings.Discord.Status.Online,
             RunningStatus.Offline => Settings.Discord.Status.Offline,
+            RunningStatus.Uninstalled => Settings.Discord.Status.Uninstalled,
             _ => string.Empty
         };
     }
