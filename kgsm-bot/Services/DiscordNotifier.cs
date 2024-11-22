@@ -1,7 +1,6 @@
 ﻿using Discord;
 using Discord.WebSocket;
 
-using TheKrystalShip.KGSM.Domain;
 using TheKrystalShip.Logging;
 
 namespace TheKrystalShip.KGSM.Services;
@@ -25,11 +24,8 @@ public class DiscordNotifier
     /// </summary>
     /// <param name="args"></param>
     /// <returns></returns>
-    public async Task OnRunningStatusUpdated(RunningStatusUpdatedArgs args)
+    public async Task OnRunningStatusUpdated(string instanceId, RunningStatus runningStatus)
     {
-        string instanceId = args.InstanceId;
-        RunningStatus newStatus = args.RunningStatus;
-
         string discordChannelId = _settingsManager.GetInstance(instanceId)?.ChannelId ?? string.Empty;
 
         if (discordChannelId == string.Empty)
@@ -38,11 +34,11 @@ public class DiscordNotifier
             return;
         }
 
-        string emote = _settingsManager.GetStatus(newStatus) ?? string.Empty;
+        string emote = _settingsManager.GetStatus(runningStatus) ?? string.Empty;
 
         if (emote == string.Empty)
         {
-            _logger.LogError($"Failed to get new status emote from settings file. New status: {newStatus}");
+            _logger.LogError($"Failed to get new status emote from settings file. New status: {runningStatus}");
             return;
         }
 
@@ -53,10 +49,10 @@ public class DiscordNotifier
         }
 
         if (discordChannel is IMessageChannel messageChannel)
-            await messageChannel.SendMessageAsync($"New status: {newStatus}");
+            await messageChannel.SendMessageAsync($"New status: {runningStatus}");
 
         string newChannelStatusName = $"{emote}{instanceId}";
-        _logger.LogInformation($"New status for {instanceId}: {newStatus}");
+        _logger.LogInformation($"New status for {instanceId}: {runningStatus}");
 
         try
         {

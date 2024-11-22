@@ -1,7 +1,5 @@
 ﻿using System.Threading.Tasks;
 
-using TheKrystalShip.KGSM.Domain;
-
 using TheKrystalShip.KGSM.Lib;
 using TheKrystalShip.Logging;
 
@@ -59,7 +57,7 @@ public class KgsmEventListener
 
     private async Task OnInstanceStoppedAsync(InstanceStoppedData stoppedData)
     {
-        await _discordNotifier.OnRunningStatusUpdated(new(stoppedData.InstanceId, RunningStatus.Offline));
+        await _discordNotifier.OnRunningStatusUpdated(stoppedData.InstanceId, RunningStatus.Offline);
     }
 
     private async Task OnInstanceUninstalledAsync(InstanceUninstalledData uninstalledData)

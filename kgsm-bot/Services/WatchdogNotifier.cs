@@ -1,8 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics;
 
-using TheKrystalShip.KGSM.Domain;
-
 using TheKrystalShip.Logging;
 
 namespace TheKrystalShip.KGSM.Services;
@@ -106,8 +104,7 @@ public class WatchdogNotifier
 
         _logger.LogInformation($"Instance {instanceId} started");
         
-        var rsua = new RunningStatusUpdatedArgs(new(instanceId), RunningStatus.Online);
-        await _discordNotifier.OnRunningStatusUpdated(rsua);
+        await _discordNotifier.OnRunningStatusUpdated(instanceId, RunningStatus.Online);
 
         // Once the instance has been marked as "started" the watchdog doesn't
         // need to do anything else, so it can shutdown.
