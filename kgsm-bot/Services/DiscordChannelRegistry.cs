@@ -10,12 +10,18 @@ public class DiscordChannelRegistry
     private readonly DiscordSocketClient _discordClient;
     private readonly Logger<DiscordChannelRegistry> _logger;
     private readonly AppSettingsManager _settingsManager;
+    private readonly DiscordNotifier _discordNotifier;
 
-    public DiscordChannelRegistry(DiscordSocketClient discordClient, AppSettingsManager settingsManager)
+    public DiscordChannelRegistry(
+            DiscordSocketClient discordClient,
+            AppSettingsManager settingsManager,
+            DiscordNotifier discordNotifier
+        )
     {
         _discordClient = discordClient;
         _logger = new();
         _settingsManager = settingsManager;
+        _discordNotifier = discordNotifier;
     }
 
     public async Task AddOrUpdateChannelAsync(ulong guildId, string blueprint, string instanceId)
@@ -36,14 +42,20 @@ public class DiscordChannelRegistry
 
         string channelId = string.Empty;
 
+        // If a channel already exists with the same name as the instance
         if (_settingsManager.Instances.ContainsKey(instanceId))
         {
-            channelId = _settingsManager.Instances[instanceId].ChannelId;
+            // Change channel from "uninstalled" to "offline" since the instance has been recreated
+            await _discordNotifier.OnRunningStatusUpdated(instanceId, RunningStatus.Offline);
         }
         else
         {
+            // Create new text channel in the category
             RestTextChannel newTextChannel = await socketGuild
-                .CreateTextChannelAsync(instanceId, props => props.CategoryId = categoryChannel.Id);
+                .CreateTextChannelAsync(
+                    $"{_settingsManager.Discord.Status.Offline}{instanceId}",
+                    props => props.CategoryId = categoryChannel.Id
+                );
 
             channelId = newTextChannel.Id.ToString();
         }
