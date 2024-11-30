@@ -47,6 +47,7 @@ public class DiscordChannelRegistry
         {
             // Change channel from "uninstalled" to "offline" since the instance has been recreated
             await _discordNotifier.OnRunningStatusUpdated(instanceId, RunningStatus.Offline);
+            channelId = _settingsManager.Instances[instanceId].ChannelId;
         }
         else
         {
