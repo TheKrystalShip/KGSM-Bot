@@ -31,6 +31,12 @@ public partial class InstancesModule : InteractionModuleBase<SocketInteractionCo
         string instance
     )
     {
+        if (_interop.IsActive(instance))
+        { 
+            await RespondAsync($"Instance {instance} is already running");
+            return;
+        }
+
         await RespondAsync($"Starting {instance}...");
         _interop.Start(instance);
     }
@@ -86,16 +92,8 @@ public partial class InstancesModule : InteractionModuleBase<SocketInteractionCo
         string instance
     )
     {
-        static string GetSynonym(string input) =>
-            input switch
-            {
-                "active" => "online",
-                "inactive" => "offline",
-                _ => "invalid state"
-            };
-
-        KgsmResult result = _interop.IsActive(instance);
-        string outputMessage = $"{instance} is {GetSynonym(result.Stdout ?? result.Stderr ?? string.Empty)}";
+        bool result = _interop.IsActive(instance);
+        string outputMessage = $"{instance} is {(result ? "active" : "inactive")}";
 
         await RespondAsync(outputMessage);
     }

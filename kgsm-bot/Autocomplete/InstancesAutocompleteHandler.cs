@@ -1,6 +1,8 @@
 ﻿using Discord;
 using Discord.Interactions;
 
+using TheKrystalShip.KGSM.Lib;
+
 namespace TheKrystalShip.KGSM;
 
 public class InstancesAutocompleteHandler : AutocompleteHandler
@@ -9,10 +11,9 @@ public class InstancesAutocompleteHandler : AutocompleteHandler
 
     public InstancesAutocompleteHandler(KgsmInterop interop)
     {
-        KgsmResult result = interop.GetInstances();
+        Dictionary<string, Instance> result = interop.GetInstances();
         
-        if (result.Stdout?.Trim() != string.Empty)
-            _instances = result.Stdout?.Split('\n').ToList() ?? [];
+        _instances = result.Keys.ToList();
     }
 
     public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)

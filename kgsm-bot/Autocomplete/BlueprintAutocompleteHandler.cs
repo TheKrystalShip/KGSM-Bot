@@ -1,6 +1,8 @@
 ﻿using Discord;
 using Discord.Interactions;
 
+using TheKrystalShip.KGSM.Lib;
+
 namespace TheKrystalShip.KGSM;
 
 public class BlueprintAutocompleteHandler : AutocompleteHandler
@@ -9,10 +11,8 @@ public class BlueprintAutocompleteHandler : AutocompleteHandler
 
     public BlueprintAutocompleteHandler(KgsmInterop interop)
     {
-        KgsmResult result = interop.GetBlueprints();
-
-        if (result.Stdout?.Trim() != string.Empty)
-            _blueprints = result.Stdout?.Split('\n').ToList() ?? [];
+        Dictionary<string, Blueprint> result = interop.GetBlueprints();
+        _blueprints = result.Keys.ToList();
     }
 
     public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
