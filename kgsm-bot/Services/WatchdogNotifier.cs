@@ -1,6 +1,5 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics;
-
 using TheKrystalShip.Logging;
 
 namespace TheKrystalShip.KGSM.Services;
@@ -35,7 +34,7 @@ public class WatchdogNotifier
             _logger.LogError($"Triggers for instance: {instanceId} is null");
             return;
         }
-        
+
         var cts = new CancellationTokenSource();
         _serviceThreads[instanceId] = cts;
 
@@ -56,7 +55,11 @@ public class WatchdogNotifier
         }
     }
 
-    private async Task MonitorInstanceAsync(string instanceId, string onlineTrigger, CancellationToken cancellationToken)
+    private async Task MonitorInstanceAsync(
+        string instanceId,
+        string onlineTrigger,
+        CancellationToken cancellationToken
+    )
     {
         string kgsmPath = _settingsManager.Settings.Kgsm.Path ?? string.Empty;
 
@@ -70,13 +73,13 @@ public class WatchdogNotifier
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
-            CreateNoWindow = true
+            CreateNoWindow = true,
         };
 
         using var process = new Process { StartInfo = processStartInfo };
         process.OutputDataReceived += async (sender, e) =>
             await HandleOutputAsync(instanceId, e.Data, onlineTrigger);
-        
+
         process.ErrorDataReceived += (sender, e) =>
             _logger.LogError($"Instance {instanceId} error: {e.Data}");
 
@@ -84,17 +87,22 @@ public class WatchdogNotifier
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
 
-        while (!cancellationToken.IsCancellationRequested && !process.HasExited)
+        try
         {
-            await Task.Delay(500, cancellationToken);
+            // Wait for the process to exit asynchronously.
+            // This will observe cancellation as well.
+            await process.WaitForExitAsync(cancellationToken);
         }
-
-        if (!process.HasExited)
+        catch (OperationCanceledException)
         {
-            process.Kill();
+            _logger.LogInformation($"Cancellation requested for instance {instanceId}.");
+            // If cancellation occurs before process exit, kill the entire process tree.
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+                _logger.LogInformation($"Killed entire process tree for instance {instanceId}.");
+            }
         }
-
-        _logger.LogInformation($"Monitoring thread for Instance: {instanceId} has exited");
     }
 
     private async Task HandleOutputAsync(string instanceId, string? output, string onlineTrigger)
@@ -103,7 +111,7 @@ public class WatchdogNotifier
             return;
 
         _logger.LogInformation($"Instance {instanceId} started");
-        
+
         await _discordNotifier.OnRunningStatusUpdated(instanceId, RunningStatus.Online);
 
         // Once the instance has been marked as "started" the watchdog doesn't
