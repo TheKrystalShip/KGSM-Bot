@@ -52,18 +52,20 @@ public class DiscordNotifier
         {
             var sentMessage = await messageChannel.SendMessageAsync($"New status: {runningStatus}");
 
-            // Fire and forget message deletion
-            _ = Task.Run(async () => {
-                try
-                {
-                    await Task.Delay(10000);
-                    await sentMessage.DeleteAsync();
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to delete the temporary message");
-                }
-            });
+            if (_settingsManager.Discord.DeleteStatusMessageAfterDelay) {
+                // Fire and forget message deletion
+                _ = Task.Run(async () => {
+                    try
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(_settingsManager.Discord.DeleteStatusMessageDelaySeconds));
+                        await sentMessage.DeleteAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to delete the temporary message");
+                    }
+                });
+            }
         }
 
         string newChannelStatusName = $"{emote}{instanceId}";

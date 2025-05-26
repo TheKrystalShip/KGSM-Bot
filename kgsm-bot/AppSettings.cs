@@ -13,6 +13,8 @@ public class DiscordSettings
     public ulong InstancesCategoryId { get; set; } = 0;
     public bool RemoveChannelOnInstanceDeletion { get; set; } = false;
     public StatusSettings Status { get; set; } = new();
+    public bool DeleteStatusMessageAfterDelay { get; set; } = false;
+    public int DeleteStatusMessageDelaySeconds { get; set; } = 10;
 }
 
 public class StatusSettings
@@ -45,4 +47,3 @@ public class InstanceSettings
         return $"ChannelId: {ChannelId}, Blueprint: {Blueprint}";
     }
 }
-
