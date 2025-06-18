@@ -24,7 +24,7 @@ public class DiscordChannelRegistry
         _discordNotifier = discordNotifier;
     }
 
-    public async Task AddOrUpdateChannelAsync(ulong guildId, string blueprint, string instanceId)
+    public async Task AddOrUpdateChannelAsync(ulong guildId, string blueprint, string instanceName)
     {
         ulong instancesCategoryId = _settingsManager.Discord.InstancesCategoryId;
 
@@ -43,18 +43,18 @@ public class DiscordChannelRegistry
         string channelId = string.Empty;
 
         // If a channel already exists with the same name as the instance
-        if (_settingsManager.Instances.ContainsKey(instanceId))
+        if (_settingsManager.Instances.ContainsKey(instanceName))
         {
             // Change channel from "uninstalled" to "offline" since the instance has been recreated
-            await _discordNotifier.OnRunningStatusUpdated(instanceId, RunningStatus.Offline);
-            channelId = _settingsManager.Instances[instanceId].ChannelId;
+            await _discordNotifier.OnRunningStatusUpdated(instanceName, RunningStatus.Offline);
+            channelId = _settingsManager.Instances[instanceName].ChannelId;
         }
         else
         {
             // Create new text channel in the category
             RestTextChannel newTextChannel = await socketGuild
                 .CreateTextChannelAsync(
-                    $"{_settingsManager.Discord.Status.Offline}{instanceId}",
+                    $"{_settingsManager.Discord.Status.Offline}{instanceName}",
                     props => props.CategoryId = categoryChannel.Id
                 );
 
@@ -67,12 +67,12 @@ public class DiscordChannelRegistry
             Blueprint = blueprint
         };
 
-        _settingsManager.AddOrUpdateInstance(instanceId, instanceSettings);
+        _settingsManager.AddOrUpdateInstance(instanceName, instanceSettings);
 
         _logger.LogInformation($"Added - {instanceSettings}");
     }
 
-    public async Task RemoveChannelAsync(ulong guildId, string instanceId)
+    public async Task RemoveChannelAsync(ulong guildId, string instanceName)
     {
         if (_discordClient.GetGuild(guildId) is not SocketGuild socketGuild)
         {
@@ -80,11 +80,11 @@ public class DiscordChannelRegistry
             return;
         }
 
-        string discordChannelId = _settingsManager.GetInstance(instanceId)?.ChannelId ?? string.Empty;
+        string discordChannelId = _settingsManager.GetInstance(instanceName)?.ChannelId ?? string.Empty;
 
         if (discordChannelId == string.Empty)
         {
-            _logger.LogError($"Failed to get discordChannelId for game: {instanceId}");
+            _logger.LogError($"Failed to get discordChannelId for game: {instanceName}");
             return;
         }
 
@@ -93,19 +93,19 @@ public class DiscordChannelRegistry
 
         if (textChannel is null)
         {
-            _logger.LogError($"Failed to load text channel with name: {instanceId}");
+            _logger.LogError($"Failed to load text channel with name: {instanceName}");
             return;
         }
-        
+
         if (_settingsManager.Discord.RemoveChannelOnInstanceDeletion)
         {
             await textChannel.DeleteAsync();
-            _settingsManager.RemoveInstance(instanceId);
-            _logger.LogInformation($"Removed - Channel: {instanceId}, ID: {textChannel.Id}");
+            _settingsManager.RemoveInstance(instanceName);
+            _logger.LogInformation($"Removed - Channel: {instanceName}, ID: {textChannel.Id}");
         }
         else
         {
-            _logger.LogInformation($"Preserving Channel: {instanceId}, ID: {textChannel.Id}");
+            _logger.LogInformation($"Preserving Channel: {instanceName}, ID: {textChannel.Id}");
         }
     }
 }

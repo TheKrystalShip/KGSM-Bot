@@ -45,24 +45,24 @@ public class KgsmEventListener
         await _discordChannelRegistry.AddOrUpdateChannelAsync(
             _settingsManager.Discord.Guild,
             installedData.Blueprint,
-            installedData.InstanceId
+            installedData.InstanceName
         );
     }
 
     private async Task OnInstanceStartedAsync(InstanceStartedData startedData)
     {
-        _watchdogNotifier.StartMonitoring(startedData.InstanceId);
+        _watchdogNotifier.StartMonitoring(startedData.InstanceName);
         await Task.CompletedTask;
     }
 
     private async Task OnInstanceStoppedAsync(InstanceStoppedData stoppedData)
     {
-        await _discordNotifier.OnRunningStatusUpdated(stoppedData.InstanceId, RunningStatus.Offline);
+        await _discordNotifier.OnRunningStatusUpdated(stoppedData.InstanceName, RunningStatus.Offline);
     }
 
     private async Task OnInstanceUninstalledAsync(InstanceUninstalledData uninstalledData)
     {
-        await _discordNotifier.OnRunningStatusUpdated(uninstalledData.InstanceId, RunningStatus.Uninstalled);
-        await _discordChannelRegistry.RemoveChannelAsync(_settingsManager.Discord.Guild, uninstalledData.InstanceId);
+        await _discordNotifier.OnRunningStatusUpdated(uninstalledData.InstanceName, RunningStatus.Uninstalled);
+        await _discordChannelRegistry.RemoveChannelAsync(_settingsManager.Discord.Guild, uninstalledData.InstanceName);
     }
 }

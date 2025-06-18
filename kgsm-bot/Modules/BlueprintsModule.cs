@@ -36,7 +36,7 @@ public partial class BlueprintsModule : InteractionModuleBase<SocketInteractionC
                 blueprintName: blueprint,
                 installDir: null,
                 version: null,
-                id: customName
+                name: customName
             );
 
         if (result.ExitCode == 0) {

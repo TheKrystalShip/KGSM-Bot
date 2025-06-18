@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+
 using System.Text.Json;
 
 using TheKrystalShip.Logging;
@@ -12,6 +13,7 @@ public class AppSettingsManager
     private readonly Logger<AppSettingsManager> _logger;
     public AppSettings Settings { get; private set; }
     public DiscordSettings Discord { get => Settings.Discord; }
+    public KgsmSettings Kgsm { get => Settings.Kgsm; }
     public Dictionary<string, InstanceSettings> Instances { get => Settings.Kgsm.Instances; }
     public Dictionary<string, BlueprintSettings> Blueprints { get => Settings.Kgsm.Blueprints; }
 
@@ -28,7 +30,8 @@ public class AppSettingsManager
 
         // Bind the configuration to the AppSettings model
         Settings = new AppSettings();
-        _configuration.Bind(Settings, options => {
+        _configuration.Bind(Settings, options =>
+        {
             options.ErrorOnUnknownConfiguration = true;
         });
     }
@@ -52,7 +55,7 @@ public class AppSettingsManager
             _logger.LogError($"Instance {key} not in memory, nothing to remove");
             return;
         }
-        
+
         Settings.Kgsm.Instances.Remove(key);
         SaveSettings();
     }
@@ -68,40 +71,40 @@ public class AppSettingsManager
         };
     }
 
-    public string? GetTrigger(string instanceId)
+    public string? GetTrigger(string instanceName)
     {
-        if (!Settings.Kgsm.Instances.ContainsKey(instanceId))
+        if (!Settings.Kgsm.Instances.TryGetValue(instanceName, out InstanceSettings? value))
         {
-            _logger.LogError($"Instance {instanceId} not in memory");
+            _logger.LogError($"Instance {instanceName} not in memory");
             return null;
         }
 
-        string instanceBlueprint = Settings.Kgsm.Instances[instanceId].Blueprint;
+        string instanceBlueprint = value.Blueprint;
 
         if (instanceBlueprint == string.Empty)
         {
-            _logger.LogError($"Instance {instanceId} doesn't have a blueprint defined");
+            _logger.LogError($"Instance {instanceName} doesn't have a blueprint defined");
             return null;
         }
 
-        if (!Settings.Kgsm.Blueprints.ContainsKey(instanceBlueprint))
+        if (!Settings.Kgsm.Blueprints.TryGetValue(instanceBlueprint, out BlueprintSettings? blueprintValue))
         {
             _logger.LogError($"Blueprint {instanceBlueprint} not in memory");
             return null;
         }
 
-        return Settings.Kgsm.Blueprints[instanceBlueprint].OnlineTrigger;
+        return blueprintValue.OnlineTrigger;
     }
 
-    public InstanceSettings? GetInstance(string instanceId)
+    public InstanceSettings? GetInstance(string instanceName)
     {
-        if (!Settings.Kgsm.Instances.ContainsKey(instanceId))
+        if (!Settings.Kgsm.Instances.TryGetValue(instanceName, out InstanceSettings? value))
         {
-            _logger.LogError($"Instance {instanceId} not in memory");
+            _logger.LogError($"Instance {instanceName} not in memory");
             return null;
         }
 
-        return Settings.Kgsm.Instances[instanceId];
+        return value;
     }
 
     /// <summary>
@@ -118,4 +121,3 @@ public class AppSettingsManager
         File.WriteAllText(_filePath, json);
     }
 }
-

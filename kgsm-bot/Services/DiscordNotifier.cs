@@ -24,13 +24,13 @@ public class DiscordNotifier
     /// </summary>
     /// <param name="args"></param>
     /// <returns></returns>
-    public async Task OnRunningStatusUpdated(string instanceId, RunningStatus runningStatus)
+    public async Task OnRunningStatusUpdated(string instanceName, RunningStatus runningStatus)
     {
-        string discordChannelId = _settingsManager.GetInstance(instanceId)?.ChannelId ?? string.Empty;
+        string discordChannelId = _settingsManager.GetInstance(instanceName)?.ChannelId ?? string.Empty;
 
         if (discordChannelId == string.Empty)
         {
-            _logger.LogError($"Failed to get discordChannelId for instance: {instanceId}");
+            _logger.LogError($"Failed to get discordChannelId for instance: {instanceName}");
             return;
         }
 
@@ -68,8 +68,8 @@ public class DiscordNotifier
             }
         }
 
-        string newChannelStatusName = $"{emote}{instanceId}";
-        _logger.LogInformation($"New status for {instanceId}: {runningStatus}");
+        string newChannelStatusName = $"{emote}{instanceName}";
+        _logger.LogInformation($"New status for {instanceName}: {runningStatus}");
 
         try
         {

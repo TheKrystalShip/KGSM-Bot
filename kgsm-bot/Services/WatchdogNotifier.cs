@@ -19,44 +19,44 @@ public class WatchdogNotifier
         _settingsManager = settingsManager;
     }
 
-    public void StartMonitoring(string instanceId)
+    public void StartMonitoring(string instanceName)
     {
-        if (_serviceThreads.ContainsKey(instanceId))
+        if (_serviceThreads.ContainsKey(instanceName))
         {
-            _logger.LogError($"Instance {instanceId} is already being monitored");
+            _logger.LogError($"Instance {instanceName} is already being monitored");
             return;
         }
 
-        var trigger = _settingsManager.GetTrigger(instanceId);
+        var trigger = _settingsManager.GetTrigger(instanceName);
 
         if (trigger == null)
         {
-            _logger.LogError($"Triggers for instance: {instanceId} is null");
+            _logger.LogError($"Triggers for instance: {instanceName} is null");
             return;
         }
 
         var cts = new CancellationTokenSource();
-        _serviceThreads[instanceId] = cts;
+        _serviceThreads[instanceName] = cts;
 
-        Task.Run(() => MonitorInstanceAsync(instanceId, trigger, cts.Token));
-        _logger.LogInformation($"Started monitoring instance: {instanceId}");
+        Task.Run(() => MonitorInstanceAsync(instanceName, trigger, cts.Token));
+        _logger.LogInformation($"Started monitoring instance: {instanceName}");
     }
 
-    public void StopMonitoring(string instanceId)
+    public void StopMonitoring(string instanceName)
     {
-        if (_serviceThreads.TryRemove(instanceId, out var cts))
+        if (_serviceThreads.TryRemove(instanceName, out var cts))
         {
             cts.Cancel();
-            _logger.LogInformation($"Stopped monitoring instance: {instanceId}");
+            _logger.LogInformation($"Stopped monitoring instance: {instanceName}");
         }
         else
         {
-            _logger.LogError($"Instance {instanceId} is not currently being monitored");
+            _logger.LogError($"Instance {instanceName} is not currently being monitored");
         }
     }
 
     private async Task MonitorInstanceAsync(
-        string instanceId,
+        string instanceName,
         string onlineTrigger,
         CancellationToken cancellationToken
     )
@@ -69,7 +69,7 @@ public class WatchdogNotifier
         var processStartInfo = new ProcessStartInfo()
         {
             FileName = kgsmPath,
-            Arguments = $"--instance {instanceId} --logs",
+            Arguments = $"--instance {instanceName} --logs --follow",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
@@ -78,10 +78,10 @@ public class WatchdogNotifier
 
         using var process = new Process { StartInfo = processStartInfo };
         process.OutputDataReceived += async (sender, e) =>
-            await HandleOutputAsync(instanceId, e.Data, onlineTrigger);
+            await HandleOutputAsync(instanceName, e.Data, onlineTrigger);
 
         process.ErrorDataReceived += (sender, e) =>
-            _logger.LogError($"Instance {instanceId} error: {e.Data}");
+            _logger.LogError($"Instance {instanceName} error: {e.Data}");
 
         process.Start();
         process.BeginOutputReadLine();
@@ -95,27 +95,27 @@ public class WatchdogNotifier
         }
         catch (OperationCanceledException)
         {
-            _logger.LogInformation($"Cancellation requested for instance {instanceId}.");
+            _logger.LogInformation($"Cancellation requested for instance {instanceName}.");
             // If cancellation occurs before process exit, kill the entire process tree.
             if (!process.HasExited)
             {
                 process.Kill(entireProcessTree: true);
-                _logger.LogInformation($"Killed entire process tree for instance {instanceId}.");
+                _logger.LogInformation($"Killed entire process tree for instance {instanceName}.");
             }
         }
     }
 
-    private async Task HandleOutputAsync(string instanceId, string? output, string onlineTrigger)
+    private async Task HandleOutputAsync(string instanceName, string? output, string onlineTrigger)
     {
         if (output == null || !output.Contains(onlineTrigger))
             return;
 
-        _logger.LogInformation($"Instance {instanceId} started");
+        _logger.LogInformation($"Instance {instanceName} started");
 
-        await _discordNotifier.OnRunningStatusUpdated(instanceId, RunningStatus.Online);
+        await _discordNotifier.OnRunningStatusUpdated(instanceName, RunningStatus.Online);
 
         // Once the instance has been marked as "started" the watchdog doesn't
         // need to do anything else, so it can shutdown.
-        StopMonitoring(instanceId);
+        StopMonitoring(instanceName);
     }
 }
