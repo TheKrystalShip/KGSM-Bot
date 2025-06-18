@@ -1,24 +1,56 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.5.2.0
+VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "kgsm-bot", "kgsm-bot\kgsm-bot.csproj", "{86372F88-B23A-CE86-D967-E76207D847B1}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{D8BC680C-2438-4B1D-8E86-1A364E63F36D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KGSM.Bot.Core", "src\KGSM.Bot.Core\KGSM.Bot.Core.csproj", "{80F9F3B5-3B09-4983-B2FF-A362C59ED622}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KGSM.Bot.Application", "src\KGSM.Bot.Application\KGSM.Bot.Application.csproj", "{E1D38C3A-E047-45F2-8322-23F3F36185D4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KGSM.Bot.Infrastructure", "src\KGSM.Bot.Infrastructure\KGSM.Bot.Infrastructure.csproj", "{AD18F37B-7D19-43F7-8622-DE00EDAD8D46}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KGSM.Bot.Discord", "src\KGSM.Bot.Discord\KGSM.Bot.Discord.csproj", "{2F3F992E-7E0B-4249-9DA7-81E0AF9257A7}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{421DD851-6B9D-4D3B-9E02-4F0B0F526B95}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KGSM.Bot.Core.Tests", "tests\KGSM.Bot.Core.Tests\KGSM.Bot.Core.Tests.csproj", "{373793E6-C1BE-426A-8493-96BE30C91783}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
-	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{86372F88-B23A-CE86-D967-E76207D847B1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{86372F88-B23A-CE86-D967-E76207D847B1}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{86372F88-B23A-CE86-D967-E76207D847B1}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{86372F88-B23A-CE86-D967-E76207D847B1}.Release|Any CPU.Build.0 = Release|Any CPU
-	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {36569D14-AC92-40B4-9690-DDCDC62578FA}
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{80F9F3B5-3B09-4983-B2FF-A362C59ED622}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{80F9F3B5-3B09-4983-B2FF-A362C59ED622}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{80F9F3B5-3B09-4983-B2FF-A362C59ED622}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{80F9F3B5-3B09-4983-B2FF-A362C59ED622}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E1D38C3A-E047-45F2-8322-23F3F36185D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E1D38C3A-E047-45F2-8322-23F3F36185D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E1D38C3A-E047-45F2-8322-23F3F36185D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E1D38C3A-E047-45F2-8322-23F3F36185D4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AD18F37B-7D19-43F7-8622-DE00EDAD8D46}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AD18F37B-7D19-43F7-8622-DE00EDAD8D46}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AD18F37B-7D19-43F7-8622-DE00EDAD8D46}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AD18F37B-7D19-43F7-8622-DE00EDAD8D46}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2F3F992E-7E0B-4249-9DA7-81E0AF9257A7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2F3F992E-7E0B-4249-9DA7-81E0AF9257A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2F3F992E-7E0B-4249-9DA7-81E0AF9257A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2F3F992E-7E0B-4249-9DA7-81E0AF9257A7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{373793E6-C1BE-426A-8493-96BE30C91783}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{373793E6-C1BE-426A-8493-96BE30C91783}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{373793E6-C1BE-426A-8493-96BE30C91783}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{373793E6-C1BE-426A-8493-96BE30C91783}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{80F9F3B5-3B09-4983-B2FF-A362C59ED622} = {D8BC680C-2438-4B1D-8E86-1A364E63F36D}
+		{E1D38C3A-E047-45F2-8322-23F3F36185D4} = {D8BC680C-2438-4B1D-8E86-1A364E63F36D}
+		{AD18F37B-7D19-43F7-8622-DE00EDAD8D46} = {D8BC680C-2438-4B1D-8E86-1A364E63F36D}
+		{2F3F992E-7E0B-4249-9DA7-81E0AF9257A7} = {D8BC680C-2438-4B1D-8E86-1A364E63F36D}
+		{373793E6-C1BE-426A-8493-96BE30C91783} = {421DD851-6B9D-4D3B-9E02-4F0B0F526B95}
 	EndGlobalSection
 EndGlobal
